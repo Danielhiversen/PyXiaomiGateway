@@ -164,7 +164,7 @@ class XiaomiGateway:
         self.sid = sid
         self.key = key
         self.devices = defaultdict(list)
-        self.ha_devices = defaultdict(list)
+        self.callbacks = defaultdict(list)
         self.token = None
         self._socket = sock
 
@@ -186,11 +186,12 @@ class XiaomiGateway:
 
         _LOGGER.info('Found %s devices', len(sids))
 
-        sensors = ['sensor_ht', 'weather.v1']
-        binary_sensors = ['magnet', 'motion', 'switch', 'sensor_switch.aq2', '86sw1', '86sw2', 'cube', 'smoke', 'natgas']
-        switches = ['plug', 'ctrl_neutral1', 'ctrl_neutral2', '86plug']
-        gateway = ['gateway']
-        covers = ['curtain']
+        device_types = {
+            'sensor': ['sensor_ht', 'gateway', 'weather.v1'],
+            'binary_sensor': ['magnet', 'motion', 'sensor_motion.aq2', 'switch', 'sensor_switch.aq2', '86sw1', '86sw2', 'cube', 'smoke', 'natgas'],
+            'switch': ['plug', 'ctrl_neutral1', 'ctrl_neutral2', '86plug'],
+            'light': ['gateway'],
+            'cover': ['curtain']}
 
         for sid in sids:
             cmd = '{"cmd":"read","sid":"' + sid + '"}'
@@ -203,31 +204,22 @@ class XiaomiGateway:
                 continue
 
             model = resp["model"]
-            device_type = None
-            if model in sensors:
-                device_type = 'sensor'
-            elif model in binary_sensors:
-                device_type = 'binary_sensor'
-            elif model in switches:
-                device_type = 'switch'
-            elif model in gateway:
-                device_type = 'gateway'
-            elif model in covers:
-                device_type = 'cover'
-            else:
+            supported = False
+
+            for device_type in device_types:
+                if model in device_types[device_type]:
+                    supported = True
+                    xiaomi_device = {
+                        "model":model,
+                        "sid":resp["sid"],
+                        "short_id":resp["short_id"],
+                        "data":data}
+                    self.devices[device_type].append(xiaomi_device)
+                    _LOGGER.debug('Registering device %s, %s as : %s', sid, model, device_type)
+
+            if not supported:
                 _LOGGER.error('Unsupported devices : %s', model)
                 continue
-
-            xiaomi_device = {
-                "model": model,
-                "sid": resp["sid"],
-                "short_id": resp["short_id"],
-                "data": data}
-            if device_type == 'gateway':
-                self.devices['light'].append(xiaomi_device)
-                self.devices['sensor'].append(xiaomi_device)
-            else:
-                self.devices[device_type].append(xiaomi_device)
         return True
 
     def _send_cmd(self, cmd, rtn_cmd):
@@ -279,8 +271,8 @@ class XiaomiGateway:
         if jdata is None:
             return False
         sid = data['sid']
-        for device in self.ha_devices[sid]:
-            device.push_data(jdata)
+        for func in self.callbacks[sid]:
+            func(jdata)
         return True
 
     def _get_key(self):
