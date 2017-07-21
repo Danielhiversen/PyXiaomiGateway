@@ -4,7 +4,7 @@ setup(
     name = 'PyXiaomiGateway',
     packages = ['PyXiaomiGateway'],
     install_requires=['pyCrypto==2.6.1'],
-    version = '0.1.0',
+    version = '0.2.0',
     description = 'a library to communicate with the Xiaomi Gateway',
     author='Daniel Høyer Iversen',
 
