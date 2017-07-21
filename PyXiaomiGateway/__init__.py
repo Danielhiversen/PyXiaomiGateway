@@ -187,9 +187,9 @@ class XiaomiGateway:
         _LOGGER.info('Found %s devices', len(sids))
 
         device_types = {
-            'sensor': ['sensor_ht', 'gateway', 'weather.v1'],
-            'binary_sensor': ['magnet', 'motion', 'sensor_motion.aq2', 'switch', 'sensor_switch.aq2', '86sw1', '86sw2', 'cube', 'smoke', 'natgas'],
-            'switch': ['plug', 'ctrl_neutral1', 'ctrl_neutral2', '86plug'],
+            'sensor': ['sensor_ht', 'gateway', 'weather.v1', 'sensor_motion.aq2'],
+            'binary_sensor': ['magnet', 'sensor_magnet.aq2', 'motion', 'sensor_motion.aq2', 'switch', 'sensor_switch.aq2', '86sw1', '86sw2', 'cube', 'smoke', 'natgas'],
+            'switch': ['plug', 'ctrl_neutral1', 'ctrl_neutral2', 'ctrl_ln1', 'ctrl_ln2', '86plug'],
             'light': ['gateway'],
             'cover': ['curtain']}
 
@@ -215,10 +215,10 @@ class XiaomiGateway:
                         "short_id":resp["short_id"],
                         "data":data}
                     self.devices[device_type].append(xiaomi_device)
-                    _LOGGER.debug('Registering device %s, %s as : %s', sid, model, device_type)
+                    _LOGGER.debug('Registering device %s, %s as: %s', sid, model, device_type)
 
             if not supported:
-                _LOGGER.error('Unsupported devices : %s', model)
+                _LOGGER.error('Unsupported devices: %s', model)
                 continue
         return True
 
