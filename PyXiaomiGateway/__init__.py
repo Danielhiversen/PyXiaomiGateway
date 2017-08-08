@@ -200,7 +200,7 @@ class XiaomiGateway:
                 continue
             data = json.loads(resp["data"])
             if "error" in data:
-                _LOGGER.error("Not a device")
+                _LOGGER.error("Not a valid device. Check the mac adress and update the firmware.")
                 continue
 
             model = resp["model"]
