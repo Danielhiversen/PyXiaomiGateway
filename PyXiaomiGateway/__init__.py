@@ -218,7 +218,7 @@ class XiaomiGateway:
                     _LOGGER.debug('Registering device %s, %s as: %s', sid, model, device_type)
 
             if not supported:
-                _LOGGER.error('Unsupported devices: %s', model)
+                _LOGGER.error('Unsupported device found! Please create an issue at https://github.com/Danielhiversen/PyXiaomiGateway/issues and provide the following data: %s', resp)
                 continue
         return True
 
