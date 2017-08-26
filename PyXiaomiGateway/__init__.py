@@ -143,7 +143,7 @@ class PyXiaomiGateway:
                 cmd = data['cmd']
                 if cmd == 'heartbeat' and data['model'] == 'gateway':
                     gateway.token = data['token']
-                elif cmd == 'report':  # or cmd == 'heartbeat': Commented Out to avoid false positive statuses
+                elif cmd == 'report':
                     _LOGGER.debug('MCAST (%s) << %s', cmd, data)
                     self.callback_func(gateway.push_data, data)
 
