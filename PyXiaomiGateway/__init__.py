@@ -79,7 +79,7 @@ class PyXiaomiGateway:
                 self.gateways[ip_add] = XiaomiGateway(ip_add, port, sid, gateway_key, self._socket)
 
         except socket.timeout:
-            _LOGGER.info("Gateway finding finished in 5 seconds")
+            _LOGGER.info("Gateway discovery finished in 5 seconds")
             _socket.close()
 
     def _create_mcast_socket(self):
@@ -146,11 +146,10 @@ class PyXiaomiGateway:
                 elif cmd == 'report':
                     _LOGGER.debug('MCAST (%s) << %s', cmd, data)
                     self.callback_func(gateway.push_data, data)
-                    else:
-                    if cmd != 'heartbeat':
-                        _LOGGER.error('Unknown multicast data : %s', data)
+                elif cmd != 'heartbeat':
+                    _LOGGER.error('Unknown multicast data: %s', data)
             except Exception:
-                _LOGGER.error('Cannot process multicast message : %s', data)
+                _LOGGER.error('Cannot process multicast message: %s', data)
                 continue
 
 
