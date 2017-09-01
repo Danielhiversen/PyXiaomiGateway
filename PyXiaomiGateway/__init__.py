@@ -146,9 +146,9 @@ class PyXiaomiGateway:
                 elif cmd == 'report':
                     _LOGGER.debug('MCAST (%s) << %s', cmd, data)
                     self.callback_func(gateway.push_data, data)
-
-                else:
-                    _LOGGER.error('Unknown multicast data : %s', data)
+                    else:
+                    if cmd != 'heartbeat':
+                        _LOGGER.error('Unknown multicast data : %s', data)
             except Exception:
                 _LOGGER.error('Cannot process multicast message : %s', data)
                 continue
