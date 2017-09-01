@@ -79,7 +79,7 @@ class PyXiaomiGateway:
                 self.gateways[ip_add] = XiaomiGateway(ip_add, port, sid, gateway_key, self._socket)
 
         except socket.timeout:
-            _LOGGER.info("Gateway finding finished in 5 seconds")
+            _LOGGER.info("Gateway discovery finished in 5 seconds")
             _socket.close()
 
     def _create_mcast_socket(self):
@@ -143,14 +143,18 @@ class PyXiaomiGateway:
                 cmd = data['cmd']
                 if cmd == 'heartbeat' and data['model'] == 'gateway':
                     gateway.token = data['token']
-                elif cmd == 'report':
+                elif cmd == 'report' or cmd == 'heartbeat':
                     _LOGGER.debug('MCAST (%s) << %s', cmd, data)
-                    self.callback_func(gateway.push_data, data)
 
+                    if cmd == 'heartbeat' and data['model'] in ['motion', 'sensor_motion.aq2']:
+                        _LOGGER.debug(
+                            'Skipping heartbeat of the motion sensor. It can introduce an incorrect state because of a firmware bug.')
+                    else:
+                        self.callback_func(gateway.push_data, data)
                 else:
-                    _LOGGER.error('Unknown multicast data : %s', data)
+                    _LOGGER.error('Unknown multicast data: %s', data)
             except Exception:
-                _LOGGER.error('Cannot process multicast message : %s', data)
+                _LOGGER.error('Cannot process multicast message: %s', data)
                 continue
 
 
