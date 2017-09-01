@@ -94,7 +94,10 @@ class PyXiaomiGateway:
 
             mreq = socket.inet_aton(self.MULTICAST_ADDRESS) + socket.inet_aton(self._interface)
         else:
-            sock.bind((self.MULTICAST_ADDRESS, self.MULTICAST_PORT))
+            if platform.system() != "Windows":
+                sock.bind((self.MULTICAST_ADDRESS, self.MULTICAST_PORT))
+            else:
+                sock.bind(('', self.MULTICAST_PORT))
             mreq = struct.pack("4sl", socket.inet_aton(self.MULTICAST_ADDRESS), socket.INADDR_ANY)
 
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
