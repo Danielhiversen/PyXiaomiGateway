@@ -37,14 +37,25 @@ class PyXiaomiGateway:
         """Discover gateways using multicast"""
 
         _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        _socket.settimeout(5.0)
         if self._interface != 'any':
             _socket.bind((self._interface, 0))
+
+        for gateway in self._gateways_config:
+            if gateway['host']:
+                host = gateway['host']
+                port = gateway['port']
+                sid = gateway['sid']
+                key = gateway['key']
+
+                if host and port and sid:
+                    self.gateways[host] = XiaomiGateway(
+                        host, port, sid, key, self._socket)
 
         try:
             _socket.sendto('{"cmd":"whois"}'.encode(),
                            (self.MULTICAST_ADDRESS, self.GATEWAY_DISCOVERY_PORT))
 
-            _socket.settimeout(5.0)
 
             while True:
                 data, addr = _socket.recvfrom(1024)
