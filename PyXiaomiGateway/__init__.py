@@ -49,8 +49,17 @@ class PyXiaomiGateway:
                 key = gateway['key']
 
                 if host and port and sid:
-                    self.gateways[host] = XiaomiGateway(
-                        host, port, sid, key, self._socket)
+                    try:
+                        ip_address = socket.gethostbyname(host)
+                        _LOGGER.info(
+                            'Xiaomi Gateway %s configured at IP %s:%s',
+                            sid, ip_address, port)
+
+                        self.gateways[ip_address] = XiaomiGateway(
+                            ip_address, port, sid, key, self._socket)
+                    except OSError as error:
+                        _LOGGER.error(
+                            "Could not resolve %s: %s", host, error)
 
         try:
             _socket.sendto('{"cmd":"whois"}'.encode(),
