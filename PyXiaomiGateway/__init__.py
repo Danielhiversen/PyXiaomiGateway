@@ -37,14 +37,34 @@ class PyXiaomiGateway:
         """Discover gateways using multicast"""
 
         _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        _socket.settimeout(5.0)
         if self._interface != 'any':
             _socket.bind((self._interface, 0))
+
+        for gateway in self._gateways_config:
+            if 'host' in gateway:
+                host = gateway['host']
+                port = gateway['port']
+                sid = gateway['sid']
+                key = gateway['key']
+
+                if host and port and sid:
+                    try:
+                        ip_address = socket.gethostbyname(host)
+                        _LOGGER.info(
+                            'Xiaomi Gateway %s configured at IP %s:%s',
+                            sid, ip_address, port)
+
+                        self.gateways[ip_address] = XiaomiGateway(
+                            ip_address, port, sid, key, self._socket)
+                    except OSError as error:
+                        _LOGGER.error(
+                            "Could not resolve %s: %s", host, error)
 
         try:
             _socket.sendto('{"cmd":"whois"}'.encode(),
                            (self.MULTICAST_ADDRESS, self.GATEWAY_DISCOVERY_PORT))
 
-            _socket.settimeout(5.0)
 
             while True:
                 data, addr = _socket.recvfrom(1024)
