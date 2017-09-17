@@ -7,7 +7,7 @@ matrix:
 cache:
   directories:
   - "$HOME/.cache/pip"
-install: pip install requirements_test.txt
+install: pip install -r requirements_test.txt
 language: python
 script: tox
 deploy:
