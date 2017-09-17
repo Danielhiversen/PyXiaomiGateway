@@ -3,9 +3,7 @@ matrix:
   fast_finish: true
   include:
   - python: '3.5'
-    env: TOXENV=py35
-  - python: '2.7'
-    env: TOXENV=py27
+    env: TOXENV=lint
 cache:
   directories:
   - "$HOME/.cache/pip"
