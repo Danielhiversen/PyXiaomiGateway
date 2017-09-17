@@ -1,16 +1,17 @@
+"""Library to handle connection with Xiaomi Gateway"""
 import socket
 import json
 import logging
 import platform
 import struct
 from collections import defaultdict
-from Crypto.Cipher import AES
 from threading import Thread
+from Crypto.Cipher import AES
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class PyXiaomiGateway:
+class PyXiaomiGateway(object):
     """PyXiami."""
     MULTICAST_ADDRESS = '224.0.0.50'
     MULTICAST_PORT = 9898
@@ -33,6 +34,7 @@ class PyXiaomiGateway:
         self._gateways_config = gateways_config
         self._interface = interface
 
+    # pylint: disable=too-many-branches
     def discover_gateways(self):
         """Discover gateways using multicast"""
 
@@ -42,32 +44,32 @@ class PyXiaomiGateway:
             _socket.bind((self._interface, 0))
 
         for gateway in self._gateways_config:
-            if 'host' in gateway:
-                host = gateway['host']
-                port = gateway['port']
-                sid = gateway['sid']
-                key = gateway['key']
+            host = gateway.get('host')
+            port = gateway.get('port')
+            sid = gateway.get('sid')
+            key = gateway.get('key')
 
-                if host and port and sid:
-                    try:
-                        ip_address = socket.gethostbyname(host)
-                        _LOGGER.info(
-                            'Xiaomi Gateway %s configured at IP %s:%s',
-                            sid, ip_address, port)
+            if not (host and port and sid):
+                continue
 
-                        self.gateways[ip_address] = XiaomiGateway(
-                            ip_address, port, sid, key, self._socket)
-                    except OSError as error:
-                        _LOGGER.error(
-                            "Could not resolve %s: %s", host, error)
+            try:
+                ip_address = socket.gethostbyname(host)
+                _LOGGER.info(
+                    'Xiaomi Gateway %s configured at IP %s:%s',
+                    sid, ip_address, port)
+
+                self.gateways[ip_address] = XiaomiGateway(
+                    ip_address, port, sid, key, self._socket)
+            except OSError as error:
+                _LOGGER.error(
+                    "Could not resolve %s: %s", host, error)
 
         try:
             _socket.sendto('{"cmd":"whois"}'.encode(),
                            (self.MULTICAST_ADDRESS, self.GATEWAY_DISCOVERY_PORT))
 
-
             while True:
-                data, addr = _socket.recvfrom(1024)
+                data, _ = _socket.recvfrom(1024)
                 if len(data) is None:
                     continue
 
@@ -155,7 +157,7 @@ class PyXiaomiGateway:
         while self._listening:
             if self._mcastsocket is None:
                 continue
-            data, (ip_add, port) = self._mcastsocket.recvfrom(self.SOCKET_BUFSIZE)
+            data, (ip_add, _) = self._mcastsocket.recvfrom(self.SOCKET_BUFSIZE)
             try:
                 data = json.loads(data.decode("ascii"))
                 gateway = self.gateways.get(ip_add)
@@ -171,22 +173,26 @@ class PyXiaomiGateway:
 
                     if cmd == 'heartbeat' and data['model'] in ['motion', 'sensor_motion.aq2']:
                         _LOGGER.debug(
-                            'Skipping heartbeat of the motion sensor. It can introduce an incorrect state because of a firmware bug.')
+                            'Skipping heartbeat of the motion sensor.'
+                            ' It can introduce an incorrect state because of a firmware bug.')
                     else:
                         self.callback_func(gateway.push_data, data)
                 else:
                     _LOGGER.error('Unknown multicast data: %s', data)
+            # pylint: disable=broad-except
             except Exception:
                 _LOGGER.error('Cannot process multicast message: %s', data)
                 continue
 
 
-class XiaomiGateway:
+# pylint: disable=too-many-instance-attributes
+class XiaomiGateway(object):
     """Xiaomi Gateway Component"""
 
-    def __init__(self, ip, port, sid, key, sock):
+    # pylint: disable=too-many-arguments
+    def __init__(self, ip_adress, port, sid, key, sock):
 
-        self.ip_add = ip
+        self.ip_adress = ip_adress
         self.port = int(port)
         self.sid = sid
         self.key = key
@@ -215,7 +221,8 @@ class XiaomiGateway:
 
         device_types = {
             'sensor': ['sensor_ht', 'gateway', 'weather.v1', 'sensor_motion.aq2'],
-            'binary_sensor': ['magnet', 'sensor_magnet.aq2', 'motion', 'sensor_motion.aq2', 'switch', 'sensor_switch.aq2', '86sw1', '86sw2', 'cube', 'smoke', 'natgas', 'sensor_wleak.aq1'],
+            'binary_sensor': ['magnet', 'sensor_magnet.aq2', 'motion', 'sensor_motion.aq2', 'switch',
+                              'sensor_switch.aq2', '86sw1', '86sw2', 'cube', 'smoke', 'natgas', 'sensor_wleak.aq1'],
             'switch': ['plug', 'ctrl_neutral1', 'ctrl_neutral2', 'ctrl_ln1', 'ctrl_ln2', '86plug'],
             'light': ['gateway'],
             'cover': ['curtain']}
@@ -237,15 +244,17 @@ class XiaomiGateway:
                 if model in device_types[device_type]:
                     supported = True
                     xiaomi_device = {
-                        "model":model,
-                        "sid":resp["sid"],
-                        "short_id":resp["short_id"],
-                        "data":data}
+                        "model": model,
+                        "sid": resp["sid"],
+                        "short_id": resp["short_id"],
+                        "data": data}
                     self.devices[device_type].append(xiaomi_device)
                     _LOGGER.debug('Registering device %s, %s as: %s', sid, model, device_type)
 
             if not supported:
-                _LOGGER.error('Unsupported device found! Please create an issue at https://github.com/Danielhiversen/PyXiaomiGateway/issues and provide the following data: %s', resp)
+                _LOGGER.error('Unsupported device found! Please create an issue at '
+                              'https://github.com/Danielhiversen/PyXiaomiGateway/issues '
+                              'and provide the following data: %s', resp)
                 continue
         return True
 
@@ -253,8 +262,8 @@ class XiaomiGateway:
         try:
             self._socket.settimeout(10.0)
             _LOGGER.debug(">> %s", cmd.encode())
-            self._socket.sendto(cmd.encode(), (self.ip_add, self.port))
-            data, addr = self._socket.recvfrom(1024)
+            self._socket.sendto(cmd.encode(), (self.ip_adress, self.port))
+            data, _ = self._socket.recvfrom(1024)
         except socket.timeout:
             _LOGGER.error("Cannot connect to Gateway")
             return None
