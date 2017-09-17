@@ -1,4 +1,0 @@
-tox
-pycrypto==2.6.1
-pylint
-flake8

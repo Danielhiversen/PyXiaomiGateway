@@ -7,9 +7,13 @@ matrix:
 cache:
   directories:
   - "$HOME/.cache/pip"
-install: pip install -r requirements_test.txt
+install:
+- pip install pytest
+- pip install coveralls
 language: python
-script: tox
+script:
+ - flake8 PyXiaomiGateway --max-line-length=120
+ - pylint PyXiaomiGateway --max-line-length=120
 deploy:
   provider: pypi
   user: dahoiv
