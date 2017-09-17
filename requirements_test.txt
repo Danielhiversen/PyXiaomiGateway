@@ -1,4 +1,4 @@
 tox
 pycrypto==2.6.1
-pytest
+pylint
 flake8

@@ -44,15 +44,14 @@ class PyXiaomiGateway(object):
             _socket.bind((self._interface, 0))
 
         for gateway in self._gateways_config:
-            if 'host' not in gateway:
-                continue
-            host = gateway['host']
-            port = gateway['port']
-            sid = gateway['sid']
-            key = gateway['key']
+            host = gateway.get('host')
+            port = gateway.get('port')
+            sid = gateway.get('sid')
+            key = gateway.get('key')
 
             if not (host and port and sid):
                 continue
+
             try:
                 ip_address = socket.gethostbyname(host)
                 _LOGGER.info(
