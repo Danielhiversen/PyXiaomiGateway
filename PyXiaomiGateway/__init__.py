@@ -42,7 +42,7 @@ class PyXiaomiGateway:
             _socket.bind((self._interface, 0))
 
         for gateway in self._gateways_config:
-            if gateway['host']:
+            if 'host' in gateway:
                 host = gateway['host']
                 port = gateway['port']
                 sid = gateway['sid']
