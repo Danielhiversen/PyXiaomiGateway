@@ -8,8 +8,7 @@ cache:
   directories:
   - "$HOME/.cache/pip"
 install:
-- pip install pytest
-- pip install coveralls
+- pip install tox flake8 pylint pyCrypto==2.6.1
 language: python
 script:
  - flake8 PyXiaomiGateway --max-line-length=120
