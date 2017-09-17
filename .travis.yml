@@ -7,7 +7,7 @@ matrix:
 cache:
   directories:
   - "$HOME/.cache/pip"
-install: pip install -U tox flake8 pylint
+install: pip install requirements_test.txt
 language: python
 script: tox
 deploy:
