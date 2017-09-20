@@ -6,7 +6,7 @@ import platform
 import struct
 from collections import defaultdict
 from threading import Thread
-from Cryptodome.Cipher import AES
+from Crypto.Cipher import AES
 
 _LOGGER = logging.getLogger(__name__)
 
