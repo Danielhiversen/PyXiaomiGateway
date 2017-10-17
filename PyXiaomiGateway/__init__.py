@@ -280,7 +280,7 @@ class XiaomiGateway(object):
     def write_to_hub(self, sid, **kwargs):
         """Send data to gateway to turn on / off device"""
         if self.key is None:
-            _LOGGER.error('Gateway Key is not provided. Can send commands to gateway.')
+            _LOGGER.error('Gateway Key is not provided. Can send not commands to gateway.')
             return False
         data = {}
         for key in kwargs:
