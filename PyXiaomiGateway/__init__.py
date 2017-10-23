@@ -6,7 +6,8 @@ import platform
 import struct
 from collections import defaultdict
 from threading import Thread
-from Crypto.Cipher import AES
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -289,7 +290,7 @@ class XiaomiGateway(object):
         if self.token is None:
             return False
         data['key'] = self._get_key()
-        cmd = {}
+        cmd = dict()
         cmd['cmd'] = 'write'
         cmd['sid'] = sid
         cmd['data'] = data
@@ -318,8 +319,9 @@ class XiaomiGateway(object):
     def _get_key(self):
         """Get key using token from gateway"""
         init_vector = bytes(bytearray.fromhex('17996d093d28ddb3ba695a2e6f58562e'))
-        encryptor = AES.new(self.key.encode(), AES.MODE_CBC, IV=init_vector)
-        ciphertext = encryptor.encrypt(self.token.encode())
+        encryptor = Cipher(algorithms.AES(self.key.encode()), modes.CBC(init_vector),
+                           backend=default_backend()).encryptor()
+        ciphertext = encryptor.update(self.token.encode()) + encryptor.finalize()
         return ''.join('{:02x}'.format(x) for x in ciphertext)
 
 
