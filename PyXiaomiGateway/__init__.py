@@ -289,7 +289,7 @@ class XiaomiGateway(object):
             _LOGGER.debug('Gateway Token was not obtained yet. Cannot send commands to the gateway.')
             return False
         data['key'] = self._get_key()
-        cmd = []
+        cmd = {}
         cmd['cmd'] = 'write'
         cmd['sid'] = sid
         cmd['data'] = data
