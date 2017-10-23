@@ -280,15 +280,16 @@ class XiaomiGateway(object):
     def write_to_hub(self, sid, **kwargs):
         """Send data to gateway to turn on / off device"""
         if self.key is None:
-            _LOGGER.error('Gateway Key is not provided. Can not send commands to gateway.')
+            _LOGGER.error('Gateway Key is not provided. Can not send commands to the gateway.')
             return False
         data = {}
         for key in kwargs:
             data[key] = kwargs[key]
-        if self.token is None:
+        if not self.token:
+            _LOGGER.debug('Gateway Token was not obtained yet. Cannot send commands to the gateway.')
             return False
         data['key'] = self._get_key()
-        cmd = {}
+        cmd = []
         cmd['cmd'] = 'write'
         cmd['sid'] = sid
         cmd['data'] = data
