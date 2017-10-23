@@ -296,6 +296,22 @@ class XiaomiGateway(object):
         cmd['data'] = data
         cmd = json.dumps(cmd)
         resp = self._send_cmd(cmd, "write_ack")
+        if _validate_data(resp):
+            return True
+
+        if data is None or 'data' not in data:
+            return False
+        if 'error' not in data['data']:
+            return False
+        if  'Invalid key' not in data['data']['error']:
+            return False
+
+        # If 'invalid key' message we ask for a new token
+        resp = self._send_cmd('{"cmd" : "get_id_list"}', "get_id_list_ack")
+        if resp is None or "token" not in resp:
+            return False
+        self.token = resp['token']
+        resp = self._send_cmd(cmd, "write_ack")
         return _validate_data(resp)
 
     def get_from_hub(self, sid):
