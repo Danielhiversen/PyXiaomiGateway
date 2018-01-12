@@ -303,6 +303,7 @@ class XiaomiGateway(object):
         if (data is None or 'data' not in data or
                 'error' not in data['data'] or
                 'Invalid key' not in data['data']['error']):
+            return False
 
         # If 'invalid key' message we ask for a new token
         resp = self._send_cmd('{"cmd" : "get_id_list"}', "get_id_list_ack")
@@ -336,8 +337,6 @@ class XiaomiGateway(object):
         encryptor = Cipher(algorithms.AES(self.key.encode()), modes.CBC(init_vector),
                            backend=default_backend()).encryptor()
         ciphertext = encryptor.update(self.token.encode()) + encryptor.finalize()
-        if isinstance(ciphertext, str):  # For Python 2 compatibility
-            return ''.join('{:02x}'.format(ord(x)) for x in ciphertext)
         return ''.join('{:02x}'.format(x) for x in ciphertext)
 
 
