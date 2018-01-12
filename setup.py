@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name = 'PyXiaomiGateway',
-    packages = ['PyXiaomiGateway'],
+    packages = ['xiaomi_gateway'],
     install_requires=['cryptography==2.1.1'],
     version = '0.7.0',
     description = 'A library to communicate with the Xiaomi Gateway',
