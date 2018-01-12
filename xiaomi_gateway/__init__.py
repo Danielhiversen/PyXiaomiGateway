@@ -12,7 +12,7 @@ from cryptography.hazmat.backends import default_backend
 _LOGGER = logging.getLogger(__name__)
 
 
-class PyXiaomiGateway(object):
+class XiaomiGatewayDiscovery(object):
     """PyXiami."""
     MULTICAST_ADDRESS = '224.0.0.50'
     MULTICAST_PORT = 9898
