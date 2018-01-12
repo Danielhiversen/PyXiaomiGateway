@@ -308,7 +308,6 @@ class XiaomiGateway(object):
 
         if resp is None or "token" not in resp:
             _LOGGER.error('No new token from gateway. Can not send commands to the gateway.')
-            _LOGGER.error('No new token from gateway. Can not send commands to the gateway.')
             return False
         self.token = resp['token']
         resp = self._send_cmd(cmd, "write_ack")
