@@ -299,8 +299,8 @@ class XiaomiGateway(object):
         resp = self._send_cmd(cmd, "write_ack")
         if _validate_data(resp):
             return True
-        if (data is None or 'data' not in data or 'error' not in data['data'] or
-                'Invalid key' not in data['data']['error']):
+        if (resp is None or 'data' not in resp or 'error' not in resp['data'] or
+                'Invalid key' not in resp['data']['error']):
             return False
 
         # If 'invalid key' message we ask for a new token
