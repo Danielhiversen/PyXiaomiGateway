@@ -11,8 +11,8 @@ install:
 - pip install tox flake8 pylint cryptography==2.1.1
 language: python
 script:
-- flake8 PyXiaomiGateway --max-line-length=120
-- pylint PyXiaomiGateway --max-line-length=120
+- flake8 xiaomi_gateway --max-line-length=120
+- pylint xiaomi_gateway --max-line-length=120
 deploy:
   provider: pypi
   user: dahoiv
