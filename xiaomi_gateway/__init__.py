@@ -87,7 +87,7 @@ class XiaomiGatewayDiscovery(object):
                 if ip_add in self.gateways:
                     continue
 
-                gateway_key = ''
+                gateway_key = None
                 for gateway in self._gateways_config:
                     sid = gateway['sid']
                     key = gateway['key']
