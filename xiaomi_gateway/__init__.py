@@ -301,7 +301,7 @@ class XiaomiGateway(object):
         if _validate_data(resp):
             return True
         if (resp is None or 'data' not in resp or 'error' not in resp['data'] or
-                'Invalid key' not in resp['data']['error']):
+                'Invalid key' not in resp['data']):
             return False
 
         # If 'invalid key' message we ask for a new token
