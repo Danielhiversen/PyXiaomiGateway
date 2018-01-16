@@ -263,7 +263,7 @@ class XiaomiGateway(object):
     def _send_cmd(self, cmd, rtn_cmd):
         try:
             self._socket.settimeout(10.0)
-            _LOGGER.debug(">> %s", cmd.encode())
+            _LOGGER.debug("_send_cmd >> %s", cmd.encode())
             self._socket.sendto(cmd.encode(), (self.ip_adress, self.port))
             data, _ = self._socket.recvfrom(1024)
         except socket.timeout:
@@ -273,7 +273,7 @@ class XiaomiGateway(object):
             _LOGGER.error("No response from Gateway")
             return None
         resp = json.loads(data.decode())
-        _LOGGER.debug("<< %s", resp)
+        _LOGGER.debug("_send_cmd resp << %s", resp)
         if resp['cmd'] != rtn_cmd:
             _LOGGER.error("Non matching response. Expecting %s, but got %s", rtn_cmd, resp['cmd'])
             return None
@@ -297,7 +297,7 @@ class XiaomiGateway(object):
         cmd['data'] = data
         cmd = json.dumps(cmd)
         resp = self._send_cmd(cmd, "write_ack")
-        _LOGGER.debug("<< %s", resp)
+        _LOGGER.debug("write_ack << %s", resp)
         if _validate_data(resp):
             return True
         if (resp is None or 'data' not in resp or 'error' not in resp['data'] or
@@ -306,21 +306,21 @@ class XiaomiGateway(object):
 
         # If 'invalid key' message we ask for a new token
         resp = self._send_cmd('{"cmd" : "get_id_list"}', "get_id_list_ack")
-        _LOGGER.debug("<< %s", resp)
+        _LOGGER.debug("get_id_list << %s", resp)
 
         if resp is None or "token" not in resp:
             _LOGGER.error('No new token from gateway. Can not send commands to the gateway.')
             return False
         self.token = resp['token']
         resp = self._send_cmd(cmd, "write_ack")
-        _LOGGER.debug("<< %s", resp)
+        _LOGGER.debug("write_ack << %s", resp)
         return _validate_data(resp)
 
     def get_from_hub(self, sid):
         """Get data from gateway"""
         cmd = '{ "cmd":"read","sid":"' + sid + '"}'
         resp = self._send_cmd(cmd, "read_ack")
-        _LOGGER.debug("<< %s", resp)
+        _LOGGER.debug("read_ack << %s", resp)
         return self.push_data(resp)
 
     def push_data(self, data):
