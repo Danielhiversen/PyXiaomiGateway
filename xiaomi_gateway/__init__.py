@@ -283,38 +283,41 @@ class XiaomiGateway(object):
         """Send data to gateway to turn on / off device"""
         if self.key is None:
             _LOGGER.error('Gateway Key is not provided. Can not send commands to the gateway.')
-            return False
-        data = {}
-        for key in kwargs:
-            data[key] = kwargs[key]
-        if not self.token:
-            _LOGGER.debug('Gateway Token was not obtained yet. Cannot send commands to the gateway.')
-            return False
-        data['key'] = self._get_key()
-        cmd = dict()
-        cmd['cmd'] = 'write'
-        cmd['sid'] = sid
-        cmd['data'] = data
-        cmd = json.dumps(cmd)
-        resp = self._send_cmd(cmd, "write_ack")
-        _LOGGER.debug("write_ack << %s", resp)
-        if _validate_data(resp):
-            return True
-        if (resp is None or 'data' not in resp or 'error' not in resp['data'] or
-                'Invalid key' not in resp['data']):
-            return False
+            return
+        try_num = 0
+        while True:
+            data = {}
+            for key in kwargs:
+                data[key] = kwargs[key]
+            if not self.token:
+                _LOGGER.debug('Gateway Token was not obtained yet. Cannot send commands to the gateway.')
+                return False
+            data['key'] = self._get_key()
+            cmd = dict()
+            cmd['cmd'] = 'write'
+            cmd['sid'] = sid
+            cmd['data'] = data
+            cmd = json.dumps(cmd)
+            resp = self._send_cmd(cmd, "write_ack")
+            _LOGGER.debug("write_ack << %s", resp)
+            if _validate_data(resp):
+                return True
+            if (resp is None or 'data' not in resp or 'error' not in resp['data'] or
+                    'Invalid key' not in resp['data']):
+                return False
 
-        # If 'invalid key' message we ask for a new token
-        resp = self._send_cmd('{"cmd" : "get_id_list"}', "get_id_list_ack")
-        _LOGGER.debug("get_id_list << %s", resp)
+            try_num += 1
+            if try_num >= 10:
+                _LOGGER.error('Tries limit to get token is exhausted.')
+                return False
 
-        if resp is None or "token" not in resp:
-            _LOGGER.error('No new token from gateway. Can not send commands to the gateway.')
-            return False
-        self.token = resp['token']
-        resp = self._send_cmd(cmd, "write_ack")
-        _LOGGER.debug("write_ack << %s", resp)
-        return _validate_data(resp)
+            # If 'invalid key' message we ask for a new token
+            resp = self._send_cmd('{"cmd" : "get_id_list"}', "get_id_list_ack")
+
+            if resp is None or "token" not in resp:
+                _LOGGER.error('No new token from gateway. Can not send commands to the gateway.')
+                return False
+            self.token = resp['token']
 
     def get_from_hub(self, sid):
         """Get data from gateway"""
