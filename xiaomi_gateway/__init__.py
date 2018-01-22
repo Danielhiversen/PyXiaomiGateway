@@ -171,13 +171,7 @@ class XiaomiGatewayDiscovery(object):
                     gateway.token = data['token']
                 elif cmd == 'report' or cmd == 'heartbeat':
                     _LOGGER.debug('MCAST (%s) << %s', cmd, data)
-
-                    if cmd == 'heartbeat' and data['model'] in ['motion', 'sensor_motion.aq2']:
-                        _LOGGER.debug(
-                            'Skipping heartbeat of the motion sensor.'
-                            ' It can introduce an incorrect state because of a firmware bug.')
-                    else:
-                        self.callback_func(gateway.push_data, data)
+                    self.callback_func(gateway.push_data, data)
                 else:
                     _LOGGER.error('Unknown multicast data: %s', data)
             # pylint: disable=broad-except
@@ -249,7 +243,8 @@ class XiaomiGateway(object):
                         "model": model,
                         "sid": resp["sid"],
                         "short_id": resp["short_id"],
-                        "data": data}
+                        "data": data,
+                        "raw_data": resp}
                     self.devices[device_type].append(xiaomi_device)
                     _LOGGER.debug('Registering device %s, %s as: %s', sid, model, device_type)
 
@@ -332,7 +327,7 @@ class XiaomiGateway(object):
             return False
         sid = data['sid']
         for func in self.callbacks[sid]:
-            func(jdata)
+            func(jdata, data)
         return True
 
     def _get_key(self):
