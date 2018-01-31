@@ -290,8 +290,7 @@ class XiaomiGateway(object):
         cmd['cmd'] = 'write'
         cmd['sid'] = sid
         cmd['data'] = data
-        cmd = json.dumps(cmd)
-        resp = self._send_cmd(cmd, "write_ack")
+        resp = self._send_cmd(json.dumps(cmd), "write_ack")
         _LOGGER.debug("write_ack << %s", resp)
         if _validate_data(resp):
             return True
@@ -307,7 +306,9 @@ class XiaomiGateway(object):
             _LOGGER.error('No new token from gateway. Can not send commands to the gateway.')
             return False
         self.token = resp['token']
-        resp = self._send_cmd(cmd, "write_ack")
+        data['key'] = self._get_key()
+        cmd['data'] = data
+        resp = self._send_cmd(json.dumps(cmd), "write_ack")
         _LOGGER.debug("write_ack << %s", resp)
         return _validate_data(resp)
 
