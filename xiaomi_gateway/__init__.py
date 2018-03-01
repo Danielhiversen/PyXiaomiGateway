@@ -225,7 +225,7 @@ class XiaomiGateway(object):
                        'ctrl_neutral2', 'ctrl_neutral2.aq1',
                        'ctrl_ln1', 'ctrl_ln1.aq1',
                        'ctrl_ln2', 'ctrl_ln2.aq1',
-                       '86plug', '86plug.aq1'],
+                       '86plug', 'ctrl_86plug.aq1'],
             'light': ['gateway'],
             'cover': ['curtain']}
 
