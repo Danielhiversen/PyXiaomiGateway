@@ -70,7 +70,7 @@ class XiaomiGatewayDiscovery(object):
                            (self.MULTICAST_ADDRESS, self.GATEWAY_DISCOVERY_PORT))
 
             while True:
-                data, _ = _socket.recvfrom(1024)
+                data, (ip_add, _) = _socket.recvfrom(1024)
                 if len(data) is None:
                     continue
 
@@ -83,7 +83,6 @@ class XiaomiGatewayDiscovery(object):
                     _LOGGER.error("Response must be gateway model")
                     continue
 
-                ip_add = resp["ip"]
                 if ip_add in self.gateways:
                     continue
 
