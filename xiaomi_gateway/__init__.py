@@ -408,8 +408,6 @@ def _validate_keyerror(data):
         for param in data['params']:
             if 'error' in param and 'Invalid key' in param['error']:
                 return True
-            else:
-                continue
     return False
 
 
@@ -423,11 +421,8 @@ def _get_value(resp, data_key=None):
         for param in data:
             if data_key in param:
                 return param[data_key]
-            else:
-                continue
         return None
-    else:
-        return data[data_key]
+    return data[data_key]
 
 
 def _list2map(data):
