@@ -13,6 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 GATEWAY_MODELS = ['gateway', 'gateway.v3', 'acpartner.v3']
 
+
 class XiaomiGatewayDiscovery(object):
     """PyXiami."""
     MULTICAST_ADDRESS = '224.0.0.50'
@@ -100,7 +101,8 @@ class XiaomiGatewayDiscovery(object):
 
                 _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
 
-                self.gateways[ip_add] = XiaomiGateway(ip_add, port, sid, gateway_key, self._socket, resp["proto_version"] if "proto_version" in resp else None)
+                self.gateways[ip_add] = XiaomiGateway(ip_add, port, sid, gateway_key, self._socket,
+                                                      resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
             _LOGGER.info("Gateway discovery finished in 5 seconds")
@@ -186,7 +188,7 @@ class XiaomiGateway(object):
     """Xiaomi Gateway Component"""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, ip_adress, port, sid, key, sock, proto = None):
+    def __init__(self, ip_adress, port, sid, key, sock, proto=None):
 
         self.ip_adress = ip_adress
         self.port = int(port)
@@ -212,7 +214,8 @@ class XiaomiGateway(object):
     def _discover_devices(self):
 
         cmd = '{"cmd" : "get_id_list"}' if int(self.proto[0:1]) == 1 else '{"cmd":"discovery"}'
-        resp = self._send_cmd(cmd, "get_id_list_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(cmd, "discovery_rsp")
+        resp = self._send_cmd(cmd, "get_id_list_ack") if int(self.proto[0:1]) == 1 \
+            else self._send_cmd(cmd, "discovery_rsp")
         if resp is None or "token" not in resp or ("data" not in resp and "dev_list" not in resp):
             return False
         self.token = resp['token']
@@ -227,7 +230,8 @@ class XiaomiGateway(object):
         _LOGGER.info('Found %s devices', len(sids))
 
         device_types = {
-            'sensor': ['sensor_ht', 'gateway', 'gateway.v3', 'weather', 'weather.v1', 'sensor_motion.aq2', 'acpartner.v3'],
+            'sensor': ['sensor_ht', 'gateway', 'gateway.v3', 'weather',
+                       'weather.v1', 'sensor_motion.aq2', 'acpartner.v3'],
             'binary_sensor': ['magnet', 'sensor_magnet', 'sensor_magnet.aq2',
                               'motion', 'sensor_motion', 'sensor_motion.aq2',
                               'switch', 'sensor_switch', 'sensor_switch.aq2', 'sensor_switch.aq3',
@@ -285,7 +289,7 @@ class XiaomiGateway(object):
                 continue
         return True
 
-    def _send_cmd(self, cmd, rtn_cmd = None):
+    def _send_cmd(self, cmd, rtn_cmd=None):
         try:
             self._socket.settimeout(10.0)
             _LOGGER.debug("_send_cmd >> %s", cmd.encode())
@@ -325,7 +329,8 @@ class XiaomiGateway(object):
         else:
             cmd['key'] = self._get_key()
             cmd['params'] = [data]
-        resp = self._send_cmd(json.dumps(cmd), "write_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(json.dumps(cmd), "write_rsp")
+        resp = self._send_cmd(json.dumps(cmd), "write_ack") if int(self.proto[0:1]) == 1 \
+            else self._send_cmd(json.dumps(cmd), "write_rsp")
         _LOGGER.debug("write_ack << %s", resp)
         if _validate_data(resp):
             return True
@@ -340,7 +345,8 @@ class XiaomiGateway(object):
             return False
 
         # If 'invalid key' message we ask for a new token
-        resp = self._send_cmd('{"cmd" : "get_id_list"}', "get_id_list_ack") if int(self.proto[0:1]) == 1 else self._send_cmd('{"cmd" : "discovery"}', "discovery_rsp")
+        resp = self._send_cmd('{"cmd" : "get_id_list"}', "get_id_list_ack") if int(self.proto[0:1]) == 1 \
+            else self._send_cmd('{"cmd" : "discovery"}', "discovery_rsp")
         _LOGGER.debug("get_id_list << %s", resp)
 
         if resp is None or "token" not in resp:
@@ -353,7 +359,8 @@ class XiaomiGateway(object):
         else:
             cmd['key'] = self._get_key()
             cmd['params'] = [data]
-        resp = self._send_cmd(json.dumps(cmd), "write_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(json.dumps(cmd), "write_rsp")
+        resp = self._send_cmd(json.dumps(cmd), "write_ack") if int(self.proto[0:1]) == 1 \
+            else self._send_cmd(json.dumps(cmd), "write_rsp")
         _LOGGER.debug("write_ack << %s", resp)
         return _validate_data(resp)
 
@@ -401,7 +408,8 @@ def _validate_data(data):
                 return False
     return True
 
-def _get_value(resp, data_key = None):
+
+def _get_value(resp, data_key=None):
     if not _validate_data(resp):
         return None
     data = json.loads(resp["data"]) if "data" in resp else resp["params"]
@@ -414,6 +422,7 @@ def _get_value(resp, data_key = None):
         return None
     else:
         return data[data_key]
+
 
 def _list2map(data):
     if not isinstance(data, list):
