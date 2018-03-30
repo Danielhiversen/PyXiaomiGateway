@@ -51,7 +51,6 @@ class XiaomiGatewayDiscovery(object):
             port = gateway.get('port')
             sid = gateway.get('sid')
             key = gateway.get('key')
-            proto = gateway.get('proto')
 
             if not (host and port and sid):
                 continue
@@ -63,7 +62,7 @@ class XiaomiGatewayDiscovery(object):
                     sid, ip_address, port)
 
                 self.gateways[ip_address] = XiaomiGateway(
-                    ip_address, port, sid, key, self._socket, proto)
+                    ip_address, port, sid, key, self._socket, gateway.get('proto'))
             except OSError as error:
                 _LOGGER.error(
                     "Could not resolve %s: %s", host, error)
@@ -334,14 +333,7 @@ class XiaomiGateway(object):
         _LOGGER.debug("write_ack << %s", resp)
         if _validate_data(resp):
             return True
-        invalid_key = False
-        if resp is not None and "data" in resp and 'Invalid key' in resp['data']:
-            invalid_key = True
-        if resp is not None and "params" in resp:
-            for param in resp['params']:
-                if 'error' in param and 'Invalid key' in param['error']:
-                    invalid_key = True
-        if not invalid_key:
+        if not _validate_keyerror(resp):
             return False
 
         # If 'invalid key' message we ask for a new token
@@ -409,6 +401,18 @@ def _validate_data(data):
     return True
 
 
+def _validate_keyerror(data):
+    if data is not None and "data" in data and 'Invalid key' in data['data']:
+        return True
+    if data is not None and "params" in data:
+        for param in data['params']:
+            if 'error' in param and 'Invalid key' in param['error']:
+                return True
+            else:
+                continue
+    return False
+
+
 def _get_value(resp, data_key=None):
     if not _validate_data(resp):
         return None
@@ -419,6 +423,8 @@ def _get_value(resp, data_key=None):
         for param in data:
             if data_key in param:
                 return param[data_key]
+            else:
+                continue
         return None
     else:
         return data[data_key]
@@ -427,9 +433,9 @@ def _get_value(resp, data_key=None):
 def _list2map(data):
     if not isinstance(data, list):
         return data
-    map = {}
+    new_data = {}
     for obj in data:
         for key in obj:
-            map[key] = obj[key]
-    map['raw_data'] = data
-    return map
+            new_data[key] = obj[key]
+    new_data['raw_data'] = data
+    return new_data
