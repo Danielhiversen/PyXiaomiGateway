@@ -236,7 +236,7 @@ class XiaomiGateway(object):
                               'switch', 'sensor_switch', 'sensor_switch.aq2', 'sensor_switch.aq3',
                               '86sw1', 'sensor_86sw1.aq1',
                               '86sw2', 'sensor_86sw2.aq1',
-                              'cube', 'sensor_cube',
+                              'cube', 'sensor_cube', 'sensor_cube.aqgl01',
                               'smoke', 'sensor_smoke',
                               'natgas', 'sensor_natgas',
                               'sensor_wleak.aq1'],
