@@ -247,7 +247,8 @@ class XiaomiGateway(object):
                        'ctrl_ln2', 'ctrl_ln2.aq1',
                        '86plug', 'ctrl_86plug', 'ctrl_86plug.aq1'],
             'light': ['gateway', 'gateway.v3'],
-            'cover': ['curtain']}
+            'cover': ['curtain'],
+            'lock': ['lock.aq1']}
 
         for sid in sids:
             cmd = '{"cmd":"read","sid":"' + sid + '"}'
