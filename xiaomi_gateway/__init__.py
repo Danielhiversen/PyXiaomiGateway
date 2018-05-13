@@ -51,7 +51,6 @@ class XiaomiGatewayDiscovery(object):
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
-            key = gateway.get('key')
 
             if not (host and port and sid):
                 continue
@@ -68,7 +67,8 @@ class XiaomiGatewayDiscovery(object):
                     sid, ip_address, port)
 
                 self.gateways[ip_address] = XiaomiGateway(
-                    ip_address, port, sid, key, self._socket, gateway.get('proto'))
+                    ip_address, port, sid,
+                    gateway.get('key'), self._socket, gateway.get('proto'))
             except OSError as error:
                 _LOGGER.error(
                     "Could not resolve %s: %s", host, error)
@@ -79,7 +79,7 @@ class XiaomiGatewayDiscovery(object):
 
             while True:
                 data, (ip_add, _) = _socket.recvfrom(1024)
-                if len(data) is None:
+                if len(data) is None or ip_add in self.gateways:
                     continue
 
                 resp = json.loads(data.decode())
@@ -91,21 +91,16 @@ class XiaomiGatewayDiscovery(object):
                     _LOGGER.error("Response must be gateway model")
                     continue
 
-                if ip_add in self.gateways:
-                    continue
-
                 disabled = False
                 gateway_key = None
                 for gateway in self._gateways_config:
                     sid = gateway.get('sid')
-                    key = gateway.get('key')
                     if sid is None or sid == resp["sid"]:
-                        gateway_key = key
+                        gateway_key = gateway.get('key')
                     if sid and sid == resp['sid'] and gateway.get('disabled'):
                         disabled = True
 
                 sid = resp["sid"]
-
                 if disabled:
                     _LOGGER.info("Xiaomi Gateway %s is disabled by configuration",
                                  sid)
