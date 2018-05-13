@@ -56,13 +56,13 @@ class XiaomiGatewayDiscovery(object):
 
             if not (host and port and sid):
                 continue
-            if _disabled:
-                _LOGGER.info("Xiaomi Gateway %s is disabled in the configuration", sid)
-                self.disabled_gateways.append(ip_add)
-                continue
 
             try:
                 ip_address = socket.gethostbyname(host)
+                if _disabled:
+                    _LOGGER.info("Xiaomi Gateway %s is disabled in the configuration", sid)
+                    self.disabled_gateways.append(ip_address)
+                    continue
                 _LOGGER.info(
                     'Xiaomi Gateway %s configured at IP %s:%s',
                     sid, ip_address, port)
