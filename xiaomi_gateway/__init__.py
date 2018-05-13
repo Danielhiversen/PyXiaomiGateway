@@ -52,15 +52,15 @@ class XiaomiGatewayDiscovery(object):
             port = gateway.get('port')
             sid = gateway.get('sid')
             key = gateway.get('key')
-            _disabled = gateway.get('disabled')
 
             if not (host and port and sid):
                 continue
 
             try:
                 ip_address = socket.gethostbyname(host)
-                if _disabled:
-                    _LOGGER.info("Xiaomi Gateway %s is disabled in the configuration", sid)
+                if gateway.get('disabled'):
+                    _LOGGER.info(
+                        'Xiaomi Gateway %s is disabled in the configuration', sid)
                     self.disabled_gateways.append(ip_address)
                     continue
                 _LOGGER.info(
@@ -109,12 +109,14 @@ class XiaomiGatewayDiscovery(object):
                 port = resp["port"]
 
                 if disabled:
-                    _LOGGER.info("Xiaomi Gateway %s is disabled in the configuration", sid)
+                    _LOGGER.info("Xiaomi Gateway %s is disabled in the configuration",
+                                 sid)
                     self.disabled_gateways.append(ip_add)
                 else:
                     _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
-                    self.gateways[ip_add] = XiaomiGateway(ip_add, port, sid, gateway_key, self._socket,
-                                                      resp["proto_version"] if "proto_version" in resp else None)
+                    self.gateways[ip_add] = XiaomiGateway(
+                        ip_add, port, sid, gateway_key, self._socket, 
+                        resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
             _LOGGER.info("Gateway discovery finished in 5 seconds")
