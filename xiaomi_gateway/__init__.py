@@ -90,8 +90,8 @@ class XiaomiGatewayDiscovery(object):
 
                 gateway_key = None
                 for gateway in self._gateways_config:
-                    sid = gateway['sid']
-                    key = gateway['key']
+                    sid = gateway['sid'] if 'sid' in gateway else None
+                    key = gateway['key'] if 'key' in gateway else None
                     if sid is None or sid == resp["sid"]:
                         gateway_key = key
 
