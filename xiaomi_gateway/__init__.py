@@ -236,7 +236,7 @@ class XiaomiGateway(object):
                               'switch', 'sensor_switch', 'sensor_switch.aq2', 'sensor_switch.aq3',
                               '86sw1', 'sensor_86sw1.aq1',
                               '86sw2', 'sensor_86sw2.aq1',
-                              'cube', 'sensor_cube',
+                              'cube', 'sensor_cube', 'sensor_cube.aqgl01',
                               'smoke', 'sensor_smoke',
                               'natgas', 'sensor_natgas',
                               'sensor_wleak.aq1'],
@@ -247,7 +247,8 @@ class XiaomiGateway(object):
                        'ctrl_ln2', 'ctrl_ln2.aq1',
                        '86plug', 'ctrl_86plug', 'ctrl_86plug.aq1'],
             'light': ['gateway', 'gateway.v3'],
-            'cover': ['curtain']}
+            'cover': ['curtain'],
+            'lock': ['lock.aq1']}
 
         for sid in sids:
             cmd = '{"cmd":"read","sid":"' + sid + '"}'
