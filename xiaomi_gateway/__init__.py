@@ -21,6 +21,7 @@ class XiaomiGatewayDiscovery(object):
     GATEWAY_DISCOVERY_PORT = 4321
     SOCKET_BUFSIZE = 1024
 
+    disabled_gateways = []
     gateways = defaultdict(list)
 
     def __init__(self, callback_func, gateways_config, interface):
@@ -51,8 +52,13 @@ class XiaomiGatewayDiscovery(object):
             port = gateway.get('port')
             sid = gateway.get('sid')
             key = gateway.get('key')
+            _disabled = gateway.get('disabled')
 
             if not (host and port and sid):
+                continue
+            if _disabled:
+                _LOGGER.info("Xiaomi Gateway %s is disabled in the configuration", sid)
+                self.disabled_gateways.append(ip_add)
                 continue
 
             try:
@@ -88,19 +94,26 @@ class XiaomiGatewayDiscovery(object):
                 if ip_add in self.gateways:
                     continue
 
+                disabled = False
                 gateway_key = None
                 for gateway in self._gateways_config:
-                    sid = gateway['sid'] if 'sid' in gateway else None
-                    key = gateway['key'] if 'key' in gateway else None
+                    sid = gateway.get('sid')
+                    key = gateway.get('key')
+                    _disabled = gateway.get('disabled')
                     if sid is None or sid == resp["sid"]:
                         gateway_key = key
+                    if sid and sid == resp['sid'] and _disabled:
+                        disabled = True
 
                 sid = resp["sid"]
                 port = resp["port"]
 
-                _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
-
-                self.gateways[ip_add] = XiaomiGateway(ip_add, port, sid, gateway_key, self._socket,
+                if disabled:
+                    _LOGGER.info("Xiaomi Gateway %s is disabled in the configuration", sid)
+                    self.disabled_gateways.append(ip_add)
+                else:
+                    _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
+                    self.gateways[ip_add] = XiaomiGateway(ip_add, port, sid, gateway_key, self._socket,
                                                       resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
@@ -165,7 +178,8 @@ class XiaomiGatewayDiscovery(object):
                 data = json.loads(data.decode("ascii"))
                 gateway = self.gateways.get(ip_add)
                 if gateway is None:
-                    _LOGGER.error('Unknown gateway ip %s', ip_add)
+                    if ip_add not in self.disabled_gateways:
+                        _LOGGER.error('Unknown gateway ip %s', ip_add)
                     continue
 
                 cmd = data['cmd']
@@ -423,7 +437,7 @@ def _get_value(resp, data_key=None):
             if data_key in param:
                 return param[data_key]
         return None
-    return data[data_key]
+    return data.get(data_key)
 
 
 def _list2map(data):
