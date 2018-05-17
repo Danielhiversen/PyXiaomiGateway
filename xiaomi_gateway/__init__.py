@@ -21,6 +21,7 @@ class XiaomiGatewayDiscovery(object):
     GATEWAY_DISCOVERY_PORT = 4321
     SOCKET_BUFSIZE = 1024
 
+    disabled_gateways = []
     gateways = defaultdict(list)
 
     def __init__(self, callback_func, gateways_config, interface):
@@ -50,19 +51,24 @@ class XiaomiGatewayDiscovery(object):
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
-            key = gateway.get('key')
 
             if not (host and port and sid):
                 continue
 
             try:
                 ip_address = socket.gethostbyname(host)
+                if gateway.get('disable'):
+                    _LOGGER.info(
+                        'Xiaomi Gateway %s is disabled by configuration', sid)
+                    self.disabled_gateways.append(ip_address)
+                    continue
                 _LOGGER.info(
                     'Xiaomi Gateway %s configured at IP %s:%s',
                     sid, ip_address, port)
 
                 self.gateways[ip_address] = XiaomiGateway(
-                    ip_address, port, sid, key, self._socket, gateway.get('proto'))
+                    ip_address, port, sid,
+                    gateway.get('key'), self._socket, gateway.get('proto'))
             except OSError as error:
                 _LOGGER.error(
                     "Could not resolve %s: %s", host, error)
@@ -73,7 +79,7 @@ class XiaomiGatewayDiscovery(object):
 
             while True:
                 data, (ip_add, _) = _socket.recvfrom(1024)
-                if len(data) is None:
+                if len(data) is None or ip_add in self.gateways:
                     continue
 
                 resp = json.loads(data.decode())
@@ -85,23 +91,25 @@ class XiaomiGatewayDiscovery(object):
                     _LOGGER.error("Response must be gateway model")
                     continue
 
-                if ip_add in self.gateways:
-                    continue
-
+                disabled = False
                 gateway_key = None
                 for gateway in self._gateways_config:
-                    sid = gateway['sid']
-                    key = gateway['key']
+                    sid = gateway.get('sid')
                     if sid is None or sid == resp["sid"]:
-                        gateway_key = key
+                        gateway_key = gateway.get('key')
+                    if sid and sid == resp['sid'] and gateway.get('disable'):
+                        disabled = True
 
                 sid = resp["sid"]
-                port = resp["port"]
-
-                _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
-
-                self.gateways[ip_add] = XiaomiGateway(ip_add, port, sid, gateway_key, self._socket,
-                                                      resp["proto_version"] if "proto_version" in resp else None)
+                if disabled:
+                    _LOGGER.info("Xiaomi Gateway %s is disabled by configuration",
+                                 sid)
+                    self.disabled_gateways.append(ip_add)
+                else:
+                    _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
+                    self.gateways[ip_add] = XiaomiGateway(
+                        ip_add, resp["port"], sid, gateway_key, self._socket,
+                        resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
             _LOGGER.info("Gateway discovery finished in 5 seconds")
@@ -165,7 +173,8 @@ class XiaomiGatewayDiscovery(object):
                 data = json.loads(data.decode("ascii"))
                 gateway = self.gateways.get(ip_add)
                 if gateway is None:
-                    _LOGGER.error('Unknown gateway ip %s', ip_add)
+                    if ip_add not in self.disabled_gateways:
+                        _LOGGER.error('Unknown gateway ip %s', ip_add)
                     continue
 
                 cmd = data['cmd']
@@ -423,7 +432,7 @@ def _get_value(resp, data_key=None):
             if data_key in param:
                 return param[data_key]
         return None
-    return data[data_key]
+    return data.get(data_key)
 
 
 def _list2map(data):
