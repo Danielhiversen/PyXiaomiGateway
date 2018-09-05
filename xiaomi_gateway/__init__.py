@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 GATEWAY_MODELS = ['gateway', 'gateway.v3', 'acpartner.v3']
 
 
-class XiaomiGatewayDiscovery(object):
+class XiaomiGatewayDiscovery:
     """PyXiami."""
     MULTICAST_ADDRESS = '224.0.0.50'
     MULTICAST_PORT = 9898
@@ -180,7 +180,7 @@ class XiaomiGatewayDiscovery(object):
                 cmd = data['cmd']
                 if cmd == 'heartbeat' and data['model'] in GATEWAY_MODELS:
                     gateway.token = data['token']
-                elif cmd == 'report' or cmd == 'heartbeat':
+                elif cmd in ('report', 'heartbeat'):
                     _LOGGER.debug('MCAST (%s) << %s', cmd, data)
                     self.callback_func(gateway.push_data, data)
                 else:
@@ -192,7 +192,7 @@ class XiaomiGatewayDiscovery(object):
 
 
 # pylint: disable=too-many-instance-attributes
-class XiaomiGateway(object):
+class XiaomiGateway:
     """Xiaomi Gateway Component"""
 
     # pylint: disable=too-many-arguments
