@@ -51,10 +51,12 @@ class XiaomiGatewayDiscovery:
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
+            discovery_retries = gateway.get('discovery_retries')
 
             if not (host and port and sid):
                 continue
-
+            if not discovery_retries:
+                discovery_retries = 1
             try:
                 ip_address = socket.gethostbyname(host)
                 if gateway.get('disable'):
@@ -68,7 +70,8 @@ class XiaomiGatewayDiscovery:
 
                 self.gateways[ip_address] = XiaomiGateway(
                     ip_address, port, sid,
-                    gateway.get('key'), self._socket, gateway.get('proto'))
+                    gateway.get('key'), self._socket,
+                    discovery_retries, gateway.get('proto'))
             except OSError as error:
                 _LOGGER.error(
                     "Could not resolve %s: %s", host, error)
@@ -196,7 +199,7 @@ class XiaomiGateway:
     """Xiaomi Gateway Component"""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, ip_adress, port, sid, key, sock, proto=None):
+    def __init__(self, ip_adress, port, sid, key, sock, discovery_retries, proto=None):
 
         self.ip_adress = ip_adress
         self.port = int(port)
@@ -206,6 +209,7 @@ class XiaomiGateway:
         self.callbacks = defaultdict(list)
         self.token = None
         self._socket = sock
+        self._discovery_retries = discovery_retries
 
         if proto is None:
             cmd = '{"cmd":"read","sid":"' + sid + '"}'
@@ -261,7 +265,12 @@ class XiaomiGateway:
 
         for sid in sids:
             cmd = '{"cmd":"read","sid":"' + sid + '"}'
-            resp = self._send_cmd(cmd, "read_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(cmd, "read_rsp")
+            trycount = 0
+            while trycount < self._discovery_retries:
+                trycount += 1
+                resp = self._send_cmd(cmd, "read_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(cmd, "read_rsp")
+                if _validate_data(resp):
+                    break
             if not _validate_data(resp):
                 _LOGGER.error("Not a valid device. Check the mac adress and update the firmware.")
                 continue
