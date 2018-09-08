@@ -41,11 +41,13 @@ class ServerProtocol(asyncio.DatagramProtocol):
         print('Server', self.server['ip'], 'received', data, 'from', addr)
         req = json.loads(data.decode())
         if req['cmd']=='get_id_list':
+            devices = list(self.server['devices'].keys())
+            devices.remove(self.server['sid'])
             res = {
                 'cmd': 'get_id_list_ack',
                 'sid': self.server['sid'],
                 'token': 'dsiT9MDnNQ8E5fQ6',
-                'data': json.dumps(list(self.server['devices'].keys())),
+                'data': json.dumps(devices),
             }
         elif req['cmd']=='read':
             device = self.server['devices'][req['sid']]
