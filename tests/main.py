@@ -79,9 +79,9 @@ def start_server(loop, ip):
 def callback():
     print('callback called')
 
-def start_client(loop, pool):
+def start_client(loop, ip, pool):
     t = loop.create_datagram_endpoint(ClientProtocol,
-        local_addr=('0.0.0.0', 0))
+        local_addr=(ip, 0))
     loop.run_until_complete(t)
     # xiaomi = XiaomiGatewayDiscovery(callback, [], 'any')
     # loop.run_in_executor(pool, xiaomi.discover_gateways)
@@ -89,7 +89,7 @@ def start_client(loop, pool):
 logging.basicConfig(level=logging.DEBUG)
 pool = ThreadPoolExecutor(max_workers=multiprocessing.cpu_count())
 loop = asyncio.get_event_loop()
-start_server(loop, '10.30.0.100')
-start_server(loop, '10.30.0.101')
-start_client(loop, pool)
+start_server(loop, '10.0.0.2')
+start_server(loop, '10.0.0.3')
+start_client(loop, '10.0.0.1', pool)
 loop.run_forever()
