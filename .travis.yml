@@ -10,7 +10,7 @@ cache:
 install:
 - ifconfig
 - sudo apt update
-- sudo ifconfig -v eth0:0 10.30.0.100
+- sudo strace ifconfig -v eth0:0 10.30.0.100
 - sudo ifconfig -v eth0:1 10.30.0.101
 - pip install asyncio tox flake8 pylint cryptography==2.1.1
 language: python
