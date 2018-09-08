@@ -59,7 +59,7 @@ class ClientProtocol:
     def datagram_received(self, data, addr):
         print("Client received:", data.decode(), addr)
         self.res_count = self.res_count+1
-        if self.res_count==1:
+        if self.res_count==2:
             self.transport.close()
 
 def start_server(loop, ip):
@@ -89,7 +89,7 @@ def start_client(loop, pool):
 logging.basicConfig(level=logging.DEBUG)
 pool = ThreadPoolExecutor(max_workers=multiprocessing.cpu_count())
 loop = asyncio.get_event_loop()
-start_server(loop, '0.0.0.0')
-# start_server(loop, '0.0.0.0')
+start_server(loop, '10.30.0.100')
+start_server(loop, '10.30.0.101')
 start_client(loop, pool)
 loop.run_forever()
