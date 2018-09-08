@@ -11,4 +11,5 @@ install:
 - pip install asyncio tox flake8 pylint cryptography==2.1.1
 language: python
 script:
+- ifconfig
 - python tests/main.py
