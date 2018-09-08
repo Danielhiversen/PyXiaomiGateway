@@ -8,6 +8,7 @@ cache:
   directories:
   - "$HOME/.cache/pip"
 install:
+- ifconfig
 - sudo ifconfig eth0:0 10.30.0.100
 - sudo ifconfig eth0:1 10.30.0.101
 - pip install asyncio tox flake8 pylint cryptography==2.1.1
