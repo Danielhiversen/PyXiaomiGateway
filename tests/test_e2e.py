@@ -10,9 +10,6 @@ from xiaomi_gateway import XiaomiGatewayDiscovery
 
 _LOGGER = logging.getLogger(__name__)
 
-FORMAT = '%(asctime)-15s %(message)s'
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
-
 
 async def on_server_data(protocol, res, addr):
     if res['sid']=='2':
@@ -75,7 +72,8 @@ def callback():
     print('callback called')
 
 @pytest.mark.asyncio
-async def test_main(event_loop, server_factory, client_factory):
+async def test_main(event_loop, caplog, server_factory, client_factory):
+    caplog.set_level(logging.DEBUG)
     pool = ThreadPoolExecutor(max_workers=multiprocessing.cpu_count())
     server_factory(server1)
     server_factory(server2)
