@@ -68,9 +68,6 @@ server2 = {
     'on_server_data': on_server_data,
 }
 
-def callback():
-    print('callback called')
-
 @pytest.mark.asyncio
 async def test_main(event_loop, caplog, server_factory, client_factory):
     caplog.set_level(logging.DEBUG)
@@ -79,7 +76,7 @@ async def test_main(event_loop, caplog, server_factory, client_factory):
     server_factory(server2)
     client = client_factory('10.0.0.1', [server1, server2])
     await event_loop.run_in_executor(pool, client.discover_gateways)
-    for i in range(3):
+    for _ in range(3):
         task1 = event_loop.run_in_executor(pool,
             client.gateways['10.0.0.2'].get_from_hub, '2')
         task2 = event_loop.run_in_executor(pool,

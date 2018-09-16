@@ -17,4 +17,6 @@ install:
 - pip install asyncio tox flake8 pylint cryptography==2.1.1 pytest pytest-asyncio
 language: python
 script:
-- pytest 
+- flake8 xiaomi_gateway --max-line-length=120
+- pylint xiaomi_gateway --max-line-length=120
+- pytest

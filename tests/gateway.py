@@ -15,7 +15,6 @@ class DiscoveryProtocol(asyncio.DatagramProtocol):
         self.transport = transport
     def datagram_received(self, data, addr):
         _LOGGER.info('Discovery %s received: %s %s', self.server['ip'], data, addr)
-        req = json.loads(data.decode())
         res = json.dumps({
             "cmd": "iam",
             "ip": self.server['ip'],
