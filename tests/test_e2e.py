@@ -10,11 +10,6 @@ from xiaomi_gateway import XiaomiGatewayDiscovery
 
 _LOGGER = logging.getLogger(__name__)
 
-
-async def on_server_data_default(protocol, res, addr):
-    protocol.transport.sendto(json.dumps(res).encode(), addr)
-    _LOGGER.info('Server %s sent %s', protocol.server['ip'], res)
-
 gateway = {
     'model': 'gateway',
     'data': {
@@ -51,7 +46,6 @@ server1 = {
         '1': dict({'sid': '1', 'short_id': 0}, **gateway),
         '2': dict({'sid': '2', 'short_id': 20}, **magnet),
     },
-    'on_server_data': on_server_data_default,
 }
 
 server2 = {
@@ -62,7 +56,6 @@ server2 = {
         '3': dict({'sid': '3', 'short_id': 0}, **gateway),
         '4': dict({'sid': '4', 'short_id': 40}, **plug),
     },
-    'on_server_data': on_server_data_default,
 }
 
 @pytest.yield_fixture(autouse=True)
@@ -94,15 +87,9 @@ async def test_simple(event_loop, pool, client_factory):
 
 @pytest.mark.asyncio
 async def test_race(event_loop, pool, client_factory):
-    async def on_server_data(protocol, res, addr):
-        if res['sid']=='2':
-            await asyncio.sleep(1)
-        protocol.transport.sendto(json.dumps(res).encode(), addr)
-        _LOGGER.info('Server %s sent %s', protocol.server['ip'], res)
-    server1['on_server_data'] = on_server_data
     client = client_factory('10.0.0.1', [server1, server2])
     await event_loop.run_in_executor(pool, client.discover_gateways)
-    for i in range(3):
+    for i in range(100):
         task1 = event_loop.run_in_executor(pool,
             client.gateways['10.0.0.2'].get_from_hub, '2')
         task2 = event_loop.run_in_executor(pool,

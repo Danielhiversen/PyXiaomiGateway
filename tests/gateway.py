@@ -45,7 +45,8 @@ class ServerProtocol(asyncio.DatagramProtocol):
             res = self._on_read(req)
         elif req['cmd']=='write':
             res = self._on_write(req)
-        asyncio.ensure_future(self.server['on_server_data'](self, res, addr))
+        self.transport.sendto(json.dumps(res).encode(), addr)
+        _LOGGER.info('Server %s sent %s', self.server['ip'], res)
     def stop(self):
         self.transport.close()
     def _on_get_id_list(self):
