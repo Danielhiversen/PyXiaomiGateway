@@ -24,7 +24,9 @@ class DiscoveryProtocol(asyncio.DatagramProtocol):
         })
         _LOGGER.info('Discovery %s sent: %s', self.server['ip'], res.encode())
         self.transport.sendto(res.encode(), addr)
-        # self.transport.close()
+    def stop(self):
+        self.transport.close()
+
 
 class ServerProtocol(asyncio.DatagramProtocol):
     def __init__(self, server):
@@ -44,6 +46,8 @@ class ServerProtocol(asyncio.DatagramProtocol):
         elif req['cmd']=='write':
             res = self._on_write(req)
         asyncio.ensure_future(self.server['on_server_data'](self, res, addr))
+    def stop(self):
+        self.transport.close()
     def _on_get_id_list(self):
         devices = list(self.server['devices'].keys())
         devices.remove(self.server['sid'])

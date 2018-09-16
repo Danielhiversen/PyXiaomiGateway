@@ -19,10 +19,9 @@ class XiaomiGatewayDiscovery(object):
     GATEWAY_DISCOVERY_PORT = 4321
     SOCKET_BUFSIZE = 1024
 
-    gateways = defaultdict(list)
-
     def __init__(self, callback_func, gateways_config, interface):
 
+        self.gateways = defaultdict(list)
         self.callback_func = callback_func
         self._listening = False
         self._mcastsocket = None
