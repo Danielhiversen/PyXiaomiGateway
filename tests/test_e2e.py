@@ -93,6 +93,7 @@ async def test_simple(event_loop, pool, client_factory):
 
 
 @pytest.mark.asyncio
+@pytest.mark.xfail(strict=True) # remove once https://github.com/Danielhiversen/PyXiaomiGateway/issues/45 will be fixed
 async def test_race(event_loop, pool, client_factory):
     """2 gateways discovery -> 100 x (read gateway #1 + write gateway #2)
     https://github.com/Danielhiversen/PyXiaomiGateway/issues/45
