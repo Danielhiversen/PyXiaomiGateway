@@ -1,12 +1,8 @@
 sudo: required
-matrix:
-  fast_finish: true
-  include:
-  - python: '3.5'
-    env: TOXENV=lint
-cache:
-  directories:
-  - "$HOME/.cache/pip"
+language: python
+python:
+  - "3.5"
+cache: pip
 install:
 - sudo modprobe dummy
 - sudo ip addr add 10.0.0.1/29 dev dummy0
@@ -14,9 +10,17 @@ install:
 - sudo ifconfig dummy0:0 10.0.0.2 netmask 255.255.255.248
 - sudo ifconfig dummy0:1 10.0.0.3 netmask 255.255.255.248
 - ifconfig
-- pip install asyncio tox flake8 pylint cryptography==2.1.1 pytest pytest-asyncio
-language: python
+- pip install flake8 pylint cryptography==2.1.1 asyncio pytest pytest-asyncio
 script:
 - flake8 xiaomi_gateway --max-line-length=120
 - pylint xiaomi_gateway --max-line-length=120
 - pytest
+deploy:
+  provider: pypi
+  user: dahoiv
+  password:
+    secure: L58cQ+zOLr2yeWPR/4ImR/006yFy3l9PkVfoI0pMnRtgPVDJ4aG0j/vvDJqJR3TrJIjHhx+sfYwKzBA3zfNJLuVeaQfx0hgsmm3FuhCrOELEmFeinIohaVXqb7BTdU4HpxBnletSjyq5FfVKq+9hLTSiPkvD7HNVir7BdrCgSgmsKepv7Lgc8kYtiX8DPko/s1f7V/2HjtY0HHiCYFEzyYYIFgFq5wCWb/lGFGoO4Y7cQUCcvvV1AMrop92h+parDMhHGzPTdXA7GOvbjwF69rs0fAZ9+tWpTWzgCKMGA+VQp716DKwTlLcbfO1ULCtTz/Ww8mwUYjDeK+SG8vh3EswQuB5KA4TBqy5sxVN2UNPHAOyGqub2Er9lIqcVvIdV52RhOnt9LdZFMdRP3wrnqy0DZPLAsQ19f75fTkSU5YhYLS5rMaueIlj1+E9bos22VDwN3Q4FiaRbwh2t5hBRdzT43QY6VbTfFF+muiO3s0N7eHtxejMg7V3BSmzVhXPtHQdObDJW+zp+hJIXZFC2QdLvuFfK8HeZiOYJwCLf5Ln/NCAhWa4WKnEpAKaPUFhFyHYilbYBQn3Zzo0MR+En15VsIL0c7N0j3+vwWQ6yKLI9vBdb0CMpQPYNahrfDveaibJ9i97wOsX4ROJdmS56W9rxMbioLT4azQer7xLDtjo=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: Danielhiversen/PyXiaomiGateway
