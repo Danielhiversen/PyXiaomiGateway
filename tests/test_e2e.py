@@ -1,3 +1,4 @@
+"""End-to-End tests"""
 import asyncio
 import json
 import socket
