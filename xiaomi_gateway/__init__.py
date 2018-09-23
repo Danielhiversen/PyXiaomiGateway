@@ -16,6 +16,7 @@ GATEWAY_MODELS = ['gateway', 'gateway.v3', 'acpartner.v3']
 
 class XiaomiGatewayDiscovery:
     """PyXiami."""
+    # pylint: disable=too-many-instance-attributes
     MULTICAST_ADDRESS = '224.0.0.50'
     MULTICAST_PORT = 9898
     GATEWAY_DISCOVERY_PORT = 4321
