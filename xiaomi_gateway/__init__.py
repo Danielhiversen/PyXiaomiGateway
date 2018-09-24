@@ -151,7 +151,7 @@ class XiaomiGatewayDiscovery:
             self._mcastsocket.close()
             self._mcastsocket = None
 
-        for thread in self._threads:        
+        for thread in self._threads:
             thread.join()
 
     def _listen_to_msg(self):
