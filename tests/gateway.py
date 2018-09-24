@@ -5,6 +5,7 @@ import asyncio
 import random
 import string
 import socket
+import struct
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 
@@ -14,8 +15,9 @@ _LOGGER = logging.getLogger(__name__)
 class DiscoveryProtocol(asyncio.DatagramProtocol):
     """Aqara Gateway discovery requests listener (port 4321)"""
 
-    def __init__(self, server):
+    def __init__(self, server, main_protocol):
         self.server = server
+        self.main_protocol = main_protocol
 
     def connection_made(self, transport):
         _LOGGER.info('Discovery %s connected', self.server['ip'])
@@ -24,7 +26,7 @@ class DiscoveryProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data, addr):
         _LOGGER.info('Discovery %s << %s %s', self.server['ip'], data, addr)
         req = json.loads(data.decode())
-        # real gateway replies with 'iam' even if client will send an empty request
+        # Real gateway replies with 'iam' even if client will send an empty request
         if req['cmd'] != 'whois':
             _LOGGER.error('Waited for "whois", got "%s"', req['cmd'])
         res = json.dumps({
@@ -36,7 +38,11 @@ class DiscoveryProtocol(asyncio.DatagramProtocol):
         })
         _LOGGER.info('Discovery %s >> %s %s',
                      self.server['ip'], res.encode(), addr)
-        self.transport.sendto(res.encode(), addr)
+        # Hack. If we will send from self.transport, client will receive packet from its own IP, not gateway's, which
+        # fails discovery process in client. Maybe it's how linux deals with packets sent from multicast listener socket
+        # listening on aliased NICs. I had no luck with creating separate interfaces:
+        # https://serverfault.com/questions/932412/udp-multicast-on-a-dummy-nics
+        self.main_protocol.transport.sendto(res.encode(), addr)
 
     def stop(self):
         self.transport.close()
@@ -132,19 +138,19 @@ class AqaraGateway:
     """Emulates Aqara Gateway"""
 
     def __init__(self, config, event_loop):
+        main_protocol = MainProtocol(config)
+        task = event_loop.create_datagram_endpoint(lambda: main_protocol,
+                                                   local_addr=(config['ip'], 9898))
+        asyncio.ensure_future(task, loop=event_loop)
         sock = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('224.0.0.50', 4321))
         mreq = socket.inet_aton('224.0.0.50') + socket.inet_aton(config['ip'])
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-        discovery_protocol = DiscoveryProtocol(config)
+        discovery_protocol = DiscoveryProtocol(config, main_protocol)
         task = event_loop.create_datagram_endpoint(lambda: discovery_protocol,
                                                    sock=sock)
-        asyncio.ensure_future(task, loop=event_loop)
-        main_protocol = MainProtocol(config)
-        task = event_loop.create_datagram_endpoint(lambda: main_protocol,
-                                                   local_addr=(config['ip'], 9898))
         asyncio.ensure_future(task, loop=event_loop)
         self.discovery_protocol = discovery_protocol
         self.main_protocol = main_protocol
