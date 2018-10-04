@@ -16,16 +16,16 @@ GATEWAY_MODELS = ['gateway', 'gateway.v3', 'acpartner.v3']
 
 class XiaomiGatewayDiscovery:
     """PyXiami."""
+    # pylint: disable=too-many-instance-attributes
     MULTICAST_ADDRESS = '224.0.0.50'
     MULTICAST_PORT = 9898
     GATEWAY_DISCOVERY_PORT = 4321
     SOCKET_BUFSIZE = 1024
 
-    disabled_gateways = []
-    gateways = defaultdict(list)
-
     def __init__(self, callback_func, gateways_config, interface):
 
+        self.disabled_gateways = []
+        self.gateways = defaultdict(list)
         self.callback_func = callback_func
         self._listening = False
         self._mcastsocket = None
