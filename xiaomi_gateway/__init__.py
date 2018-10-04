@@ -29,11 +29,6 @@ class XiaomiGatewayDiscovery:
         self.callback_func = callback_func
         self._listening = False
         self._mcastsocket = None
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-        if interface != 'any':
-            self._socket.bind((interface, 0))
-
         self._threads = []
         self._gateways_config = gateways_config
         self._interface = interface
@@ -68,7 +63,7 @@ class XiaomiGatewayDiscovery:
 
                 self.gateways[ip_address] = XiaomiGateway(
                     ip_address, port, sid,
-                    gateway.get('key'), self._socket, gateway.get('proto'))
+                    gateway.get('key'), self._interface, gateway.get('proto'))
             except OSError as error:
                 _LOGGER.error(
                     "Could not resolve %s: %s", host, error)
@@ -108,7 +103,7 @@ class XiaomiGatewayDiscovery:
                 else:
                     _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
                     self.gateways[ip_add] = XiaomiGateway(
-                        ip_add, resp["port"], sid, gateway_key, self._socket,
+                        ip_add, resp["port"], sid, gateway_key, self._interface,
                         resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
@@ -151,11 +146,6 @@ class XiaomiGatewayDiscovery:
         """Stop listening."""
         self._listening = False
 
-        if self._socket is not None:
-            _LOGGER.info('Closing socket')
-            self._socket.close()
-            self._socket = None
-
         if self._mcastsocket is not None:
             _LOGGER.info('Closing multisocket')
             self._mcastsocket.close()
@@ -196,7 +186,7 @@ class XiaomiGateway:
     """Xiaomi Gateway Component"""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, ip_adress, port, sid, key, sock, proto=None):
+    def __init__(self, ip_adress, port, sid, key, interface, proto=None):
 
         self.ip_adress = ip_adress
         self.port = int(port)
@@ -205,7 +195,7 @@ class XiaomiGateway:
         self.devices = defaultdict(list)
         self.callbacks = defaultdict(list)
         self.token = None
-        self._socket = sock
+        self._interface = interface
 
         if proto is None:
             cmd = '{"cmd":"read","sid":"' + sid + '"}'
@@ -300,13 +290,18 @@ class XiaomiGateway:
 
     def _send_cmd(self, cmd, rtn_cmd=None):
         try:
-            self._socket.settimeout(10.0)
+            _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            if self._interface != 'any':
+                _socket.bind((self._interface, 0))
+            _socket.settimeout(10.0)
             _LOGGER.debug("_send_cmd >> %s", cmd.encode())
-            self._socket.sendto(cmd.encode(), (self.ip_adress, self.port))
-            data, _ = self._socket.recvfrom(1024)
+            _socket.sendto(cmd.encode(), (self.ip_adress, self.port))
+            data, _ = _socket.recvfrom(1024)
         except socket.timeout:
             _LOGGER.error("Cannot connect to Gateway")
             return None
+        finally:
+            _socket.close()
         if data is None:
             _LOGGER.error("No response from Gateway")
             return None
