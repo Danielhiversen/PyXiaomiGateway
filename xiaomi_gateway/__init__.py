@@ -115,10 +115,10 @@ class XiaomiGatewayDiscovery:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         if self._interface != 'any':
-            if platform.system() in ("Windows", "FreeBSD"):
-                sock.bind((self._interface, self.MULTICAST_PORT))
-            else:
+            if platform.system() != "Windows":
                 sock.bind((self.MULTICAST_ADDRESS, self.MULTICAST_PORT))
+            else:
+                sock.bind((self._interface, self.MULTICAST_PORT))
 
             mreq = socket.inet_aton(self.MULTICAST_ADDRESS) + socket.inet_aton(self._interface)
         else:
