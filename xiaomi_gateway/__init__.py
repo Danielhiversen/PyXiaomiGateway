@@ -266,7 +266,7 @@ class XiaomiGateway:
                     xiaomi_device = {
                         "model": model,
                         "proto": self.proto,
-                        "sid": resp["sid"],
+                        "sid": resp["sid"].rjust(12, '0'),
                         "short_id": resp["short_id"] if "short_id" in resp else 0,
                         "data": _list2map(_get_value(resp)),
                         "raw_data": resp}
