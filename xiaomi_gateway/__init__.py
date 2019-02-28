@@ -46,12 +46,10 @@ class XiaomiGatewayDiscovery:
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
-            discovery_retries = gateway.get('discovery_retries')
+            discovery_retries = gateway.get('discovery_retries', 1)
 
             if not (host and port and sid):
                 continue
-            if not discovery_retries:
-                discovery_retries = 1
             try:
                 ip_address = socket.gethostbyname(host)
                 if gateway.get('disable'):
@@ -256,9 +254,7 @@ class XiaomiGateway:
 
         for sid in sids:
             cmd = '{"cmd":"read","sid":"' + sid + '"}'
-            trycount = 0
-            while trycount < self._discovery_retries:
-                trycount += 1
+            for retry in range(self._discovery_retries):
                 resp = self._send_cmd(cmd, "read_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(cmd, "read_rsp")
                 if _validate_data(resp):
                     break
