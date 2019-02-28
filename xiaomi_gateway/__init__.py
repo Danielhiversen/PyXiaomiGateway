@@ -33,7 +33,7 @@ class XiaomiGatewayDiscovery:
         self._gateways_config = gateways_config
         self._interface = interface
 
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, too-many-locals
     def discover_gateways(self):
         """Discover gateways using multicast"""
 
