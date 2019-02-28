@@ -46,7 +46,7 @@ class XiaomiGatewayDiscovery:
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
-            discovery_retries = gateway.get('discovery_retries', 1)
+            discovery_retries = gateway.get('discovery_retries', 4)
 
             if not (host and port and sid):
                 continue
