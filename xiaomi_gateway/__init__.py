@@ -104,7 +104,7 @@ class XiaomiGatewayDiscovery:
                 else:
                     _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
                     self.gateways[ip_add] = XiaomiGateway(
-                        ip_add, resp["port"], sid, gateway_key, 
+                        ip_add, resp["port"], sid, gateway_key,
                         discovery_retries, self._interface,
                         resp["proto_version"] if "proto_version" in resp else None)
 
@@ -212,6 +212,7 @@ class XiaomiGateway:
             if self._discover_devices():
                 break
 
+    # pylint: disable=too-many-branches
     def _discover_devices(self):
 
         cmd = '{"cmd" : "get_id_list"}' if int(self.proto[0:1]) == 1 else '{"cmd":"discovery"}'
@@ -256,6 +257,7 @@ class XiaomiGateway:
         for sid in sids:
             cmd = '{"cmd":"read","sid":"' + sid + '"}'
             for retry in range(self._discovery_retries):
+                _LOGGER.debug("Discovery attempt %d/%d", retry + 1, self._discovery_retries)
                 resp = self._send_cmd(cmd, "read_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(cmd, "read_rsp")
                 if _validate_data(resp):
                     break
