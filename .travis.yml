@@ -1,18 +1,20 @@
-sudo: false
-matrix:
-  fast_finish: true
-  include:
-  - python: '3.5'
-    env: TOXENV=lint
-cache:
-  directories:
-  - "$HOME/.cache/pip"
-install:
-- pip install tox flake8 pylint cryptography==2.1.1
+sudo: required
 language: python
+python:
+  - "3.5"
+cache: pip
+install:
+- sudo modprobe dummy
+- sudo ip addr add 10.0.0.1/29 dev dummy0
+- sudo ip link set dummy0 up
+- sudo ifconfig dummy0:0 10.0.0.2 netmask 255.255.255.248
+- sudo ifconfig dummy0:1 10.0.0.3 netmask 255.255.255.248
+- ifconfig
+- pip install flake8 pylint cryptography==2.1.1 asyncio pytest pytest-asyncio
 script:
 - flake8 xiaomi_gateway --max-line-length=120
 - pylint xiaomi_gateway --max-line-length=120
+- pytest
 deploy:
   provider: pypi
   user: dahoiv
