@@ -104,7 +104,8 @@ class XiaomiGatewayDiscovery:
                 else:
                     _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
                     self.gateways[ip_add] = XiaomiGateway(
-                        ip_add, resp["port"], sid, gateway_key, self._interface,
+                        ip_add, resp["port"], sid, gateway_key, 
+                        self._interface, discovery_retries,
                         resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
