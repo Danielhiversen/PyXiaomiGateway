@@ -33,7 +33,7 @@ class XiaomiGatewayDiscovery:
         self._gateways_config = gateways_config
         self._interface = interface
 
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, too-many-locals
     def discover_gateways(self):
         """Discover gateways using multicast"""
 
@@ -46,10 +46,10 @@ class XiaomiGatewayDiscovery:
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
+            discovery_retries = gateway.get('discovery_retries', 4)
 
             if not (host and port and sid):
                 continue
-
             try:
                 ip_address = socket.gethostbyname(host)
                 if gateway.get('disable'):
@@ -63,7 +63,8 @@ class XiaomiGatewayDiscovery:
 
                 self.gateways[ip_address] = XiaomiGateway(
                     ip_address, port, sid,
-                    gateway.get('key'), self._interface, gateway.get('proto'))
+                    gateway.get('key'), discovery_retries,
+                    self._interface, gateway.get('proto'))
             except OSError as error:
                 _LOGGER.error(
                     "Could not resolve %s: %s", host, error)
@@ -103,7 +104,8 @@ class XiaomiGatewayDiscovery:
                 else:
                     _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
                     self.gateways[ip_add] = XiaomiGateway(
-                        ip_add, resp["port"], sid, gateway_key, self._interface,
+                        ip_add, resp["port"], sid, gateway_key,
+                        discovery_retries, self._interface,
                         resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
@@ -186,7 +188,7 @@ class XiaomiGateway:
     """Xiaomi Gateway Component"""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, ip_adress, port, sid, key, interface, proto=None):
+    def __init__(self, ip_adress, port, sid, key, discovery_retries, interface, proto=None):
 
         self.ip_adress = ip_adress
         self.port = int(port)
@@ -195,6 +197,7 @@ class XiaomiGateway:
         self.devices = defaultdict(list)
         self.callbacks = defaultdict(list)
         self.token = None
+        self._discovery_retries = discovery_retries
         self._interface = interface
 
         if proto is None:
@@ -209,6 +212,7 @@ class XiaomiGateway:
             if self._discover_devices():
                 break
 
+    # pylint: disable=too-many-branches
     def _discover_devices(self):
 
         cmd = '{"cmd" : "get_id_list"}' if int(self.proto[0:1]) == 1 else '{"cmd":"discovery"}'
@@ -252,7 +256,11 @@ class XiaomiGateway:
 
         for sid in sids:
             cmd = '{"cmd":"read","sid":"' + sid + '"}'
-            resp = self._send_cmd(cmd, "read_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(cmd, "read_rsp")
+            for retry in range(self._discovery_retries):
+                _LOGGER.debug("Discovery attempt %d/%d", retry + 1, self._discovery_retries)
+                resp = self._send_cmd(cmd, "read_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(cmd, "read_rsp")
+                if _validate_data(resp):
+                    break
             if not _validate_data(resp):
                 _LOGGER.error("Not a valid device. Check the mac adress and update the firmware.")
                 continue
