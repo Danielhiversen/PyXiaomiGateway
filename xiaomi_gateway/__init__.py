@@ -44,12 +44,11 @@ class XiaomiGatewayDiscovery:
         if self._interface != 'any':
             _socket.bind((self._interface, 0))
 
-        discovery_retries = DEFAULT_DISCOVERY_RETRIES
         for gateway in self._gateways_config:
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
-            discovery_retries = gateway.get('discovery_retries', discovery_retries)
+            discovery_retries = gateway.get('discovery_retries', DEFAULT_DISCOVERY_RETRIES)
 
             if not (host and port and sid):
                 continue
@@ -95,6 +94,7 @@ class XiaomiGatewayDiscovery:
                 for gateway in self._gateways_config:
                     sid = gateway.get('sid')
                     if sid is None or sid == resp["sid"]:
+                        discovery_retries = gateway.get('discovery_retries', DEFAULT_DISCOVERY_RETRIES)
                         gateway_key = gateway.get('key')
                     if sid and sid == resp['sid'] and gateway.get('disable'):
                         disabled = True
