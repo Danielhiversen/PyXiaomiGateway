@@ -36,7 +36,8 @@ class XiaomiGatewayDiscovery:
     # pylint: disable=too-many-branches, too-many-locals
     def discover_gateways(self):
         """Discover gateways using multicast"""
-
+        
+        discovery_retries = 4
         _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         _socket.settimeout(5.0)
         if self._interface != 'any':
