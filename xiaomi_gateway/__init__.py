@@ -44,11 +44,12 @@ class XiaomiGatewayDiscovery:
         if self._interface != 'any':
             _socket.bind((self._interface, 0))
 
+        discovery_retries = DEFAULT_DISCOVERY_RETRIES
         for gateway in self._gateways_config:
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
-            discovery_retries = gateway.get('discovery_retries', DEFAULT_DISCOVERY_RETRIES)
+            discovery_retries = gateway.get('discovery_retries', discovery_retries)
 
             if not (host and port and sid):
                 continue
@@ -107,7 +108,7 @@ class XiaomiGatewayDiscovery:
                     _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
                     self.gateways[ip_add] = XiaomiGateway(
                         ip_add, resp["port"], sid, gateway_key,
-                        DEFAULT_DISCOVERY_RETRIES, self._interface,
+                        discovery_retries, self._interface,
                         resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
