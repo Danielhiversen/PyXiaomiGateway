@@ -11,6 +11,8 @@ from cryptography.hazmat.backends import default_backend
 
 _LOGGER = logging.getLogger(__name__)
 
+DEFAULT_DISCOVERY_RETRIES = 4
+
 GATEWAY_MODELS = ['gateway', 'gateway.v3', 'acpartner.v3']
 
 
@@ -33,7 +35,7 @@ class XiaomiGatewayDiscovery:
         self._gateways_config = gateways_config
         self._interface = interface
 
-    # pylint: disable=too-many-branches, too-many-locals
+    # pylint: disable=too-many-branches, too-many-locals, too-many-statements
     def discover_gateways(self):
         """Discover gateways using multicast"""
 
@@ -42,11 +44,12 @@ class XiaomiGatewayDiscovery:
         if self._interface != 'any':
             _socket.bind((self._interface, 0))
 
+        discovery_retries = DEFAULT_DISCOVERY_RETRIES
         for gateway in self._gateways_config:
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
-            discovery_retries = gateway.get('discovery_retries', 4)
+            discovery_retries = gateway.get('discovery_retries', discovery_retries)
 
             if not (host and port and sid):
                 continue
