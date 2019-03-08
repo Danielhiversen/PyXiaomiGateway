@@ -81,6 +81,9 @@ class XiaomiGatewayDiscovery:
                 if len(data) is None or ip_add in self.gateways:
                     continue
 
+                if ip_add in self.gateways.keys():
+                    continue
+
                 resp = json.loads(data.decode())
                 if resp["cmd"] != 'iam':
                     _LOGGER.error("Response does not match return cmd")
