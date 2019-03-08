@@ -81,7 +81,7 @@ class XiaomiGatewayDiscovery:
                 if len(data) is None or ip_add in self.gateways:
                     continue
 
-                if ip_add in self.gateways.keys():
+                if ip_add in self.gateways.keys() or ip_add in self.disabled_gateways:
                     continue
 
                 resp = json.loads(data.decode())
