@@ -25,7 +25,7 @@ class XiaomiGatewayDiscovery:
     SOCKET_BUFSIZE = 1024
 
     def __init__(self, callback_func, gateways_config, interface,
-                device_discovery_retries=DEFAULT_DISCOVERY_RETRIES):
+                 device_discovery_retries=DEFAULT_DISCOVERY_RETRIES):
 
         self.disabled_gateways = []
         self.gateways = defaultdict(list)
