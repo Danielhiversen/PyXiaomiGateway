@@ -24,7 +24,8 @@ class XiaomiGatewayDiscovery:
     GATEWAY_DISCOVERY_PORT = 4321
     SOCKET_BUFSIZE = 1024
 
-    def __init__(self, callback_func, gateways_config, interface):
+    def __init__(self, callback_func, gateways_config, interface,
+                 device_discovery_retries=DEFAULT_DISCOVERY_RETRIES):
 
         self.disabled_gateways = []
         self.gateways = defaultdict(list)
@@ -34,6 +35,7 @@ class XiaomiGatewayDiscovery:
         self._threads = []
         self._gateways_config = gateways_config
         self._interface = interface
+        self._device_discovery_retries = device_discovery_retries
 
     # pylint: disable=too-many-branches, too-many-locals, too-many-statements
     def discover_gateways(self):
@@ -44,12 +46,10 @@ class XiaomiGatewayDiscovery:
         if self._interface != 'any':
             _socket.bind((self._interface, 0))
 
-        discovery_retries = DEFAULT_DISCOVERY_RETRIES
         for gateway in self._gateways_config:
             host = gateway.get('host')
             port = gateway.get('port')
             sid = gateway.get('sid')
-            discovery_retries = gateway.get('discovery_retries', discovery_retries)
 
             if not (host and port and sid):
                 continue
@@ -66,7 +66,7 @@ class XiaomiGatewayDiscovery:
 
                 self.gateways[ip_address] = XiaomiGateway(
                     ip_address, port, sid,
-                    gateway.get('key'), discovery_retries,
+                    gateway.get('key'), self._device_discovery_retries,
                     self._interface, gateway.get('proto'))
             except OSError as error:
                 _LOGGER.error(
@@ -108,7 +108,7 @@ class XiaomiGatewayDiscovery:
                     _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
                     self.gateways[ip_add] = XiaomiGateway(
                         ip_add, resp["port"], sid, gateway_key,
-                        discovery_retries, self._interface,
+                        self._device_discovery_retries, self._interface,
                         resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
