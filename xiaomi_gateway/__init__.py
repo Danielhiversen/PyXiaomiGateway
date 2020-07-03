@@ -14,13 +14,12 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_DISCOVERY_RETRIES = 4
 
 GATEWAY_MODELS = ['gateway', 'gateway.v3', 'acpartner.v3']
-
+MULTICAST_PORT = 9898
 
 class XiaomiGatewayDiscovery:
     """PyXiami."""
     # pylint: disable=too-many-instance-attributes
     MULTICAST_ADDRESS = '224.0.0.50'
-    MULTICAST_PORT = 9898
     GATEWAY_DISCOVERY_PORT = 4321
     SOCKET_BUFSIZE = 1024
 
@@ -41,10 +40,8 @@ class XiaomiGatewayDiscovery:
     def discover_gateways(self):
         """Discover gateways using multicast"""
 
-        _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        _socket = self._create_mcast_socket()
         _socket.settimeout(5.0)
-        if self._interface != 'any':
-            _socket.bind((self._interface, 0))
 
         for gateway in self._gateways_config:
             host = gateway.get('host')
@@ -124,16 +121,16 @@ class XiaomiGatewayDiscovery:
 
         if self._interface != 'any':
             if platform.system() != "Windows":
-                sock.bind((self.MULTICAST_ADDRESS, self.MULTICAST_PORT))
+                sock.bind((self.MULTICAST_ADDRESS, MULTICAST_PORT))
             else:
-                sock.bind((self._interface, self.MULTICAST_PORT))
+                sock.bind((self._interface, MULTICAST_PORT))
 
             mreq = socket.inet_aton(self.MULTICAST_ADDRESS) + socket.inet_aton(self._interface)
         else:
             if platform.system() != "Windows":
-                sock.bind((self.MULTICAST_ADDRESS, self.MULTICAST_PORT))
+                sock.bind((self.MULTICAST_ADDRESS, MULTICAST_PORT))
             else:
-                sock.bind(('', self.MULTICAST_PORT))
+                sock.bind(('', MULTICAST_PORT))
             mreq = struct.pack("=4sl", socket.inet_aton(self.MULTICAST_ADDRESS), socket.INADDR_ANY)
 
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
@@ -194,7 +191,7 @@ class XiaomiGateway:
     """Xiaomi Gateway Component"""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, ip_adress, port, sid, key, discovery_retries, interface, proto=None):
+    def __init__(self, ip_adress, port=MULTICAST_PORT, sid, key, discovery_retries, interface, proto=None):
 
         self.ip_adress = ip_adress
         self.port = int(port)
