@@ -191,7 +191,7 @@ class XiaomiGateway:
     """Xiaomi Gateway Component"""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, ip_adress, port=MULTICAST_PORT, sid, key, discovery_retries, interface, proto=None):
+    def __init__(self, ip_adress, sid, key, discovery_retries, interface, port=MULTICAST_PORT, proto=None):
 
         self.ip_adress = ip_adress
         self.port = int(port)
