@@ -121,14 +121,20 @@ class XiaomiGatewayDiscovery:
 
         if self._interface != 'any':
             if platform.system() != "Windows":
-                sock.bind((self.MULTICAST_ADDRESS, MULTICAST_PORT))
+                try:
+                    sock.bind((self.MULTICAST_ADDRESS, MULTICAST_PORT))
+                except OSError:
+                    sock.bind((self._interface, MULTICAST_PORT))
             else:
                 sock.bind((self._interface, MULTICAST_PORT))
 
             mreq = socket.inet_aton(self.MULTICAST_ADDRESS) + socket.inet_aton(self._interface)
         else:
             if platform.system() != "Windows":
-                sock.bind((self.MULTICAST_ADDRESS, MULTICAST_PORT))
+                try:
+                    sock.bind((self.MULTICAST_ADDRESS, MULTICAST_PORT))
+                except OSError:
+                    sock.bind(('', MULTICAST_PORT))
             else:
                 sock.bind(('', MULTICAST_PORT))
             mreq = struct.pack("=4sl", socket.inet_aton(self.MULTICAST_ADDRESS), socket.INADDR_ANY)
