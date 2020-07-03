@@ -62,9 +62,9 @@ class XiaomiGatewayDiscovery:
                     sid, ip_address, port)
 
                 self.gateways[ip_address] = XiaomiGateway(
-                    ip_address, port, sid,
-                    gateway.get('key'), self._device_discovery_retries,
-                    self._interface, gateway.get('proto'))
+                    ip_address, sid, gateway.get('key'),
+                    self._device_discovery_retries,
+                    self._interface, port, gateway.get('proto'))
             except OSError as error:
                 _LOGGER.error(
                     "Could not resolve %s: %s", host, error)
@@ -107,8 +107,8 @@ class XiaomiGatewayDiscovery:
                 else:
                     _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
                     self.gateways[ip_add] = XiaomiGateway(
-                        ip_add, resp["port"], sid, gateway_key,
-                        self._device_discovery_retries, self._interface,
+                        ip_add, sid, gateway_key,
+                        self._device_discovery_retries, self._interface, resp["port"],
                         resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
