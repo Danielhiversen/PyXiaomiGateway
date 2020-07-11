@@ -15,11 +15,40 @@ DEFAULT_DISCOVERY_RETRIES = 4
 
 GATEWAY_MODELS = ['gateway', 'gateway.v3', 'acpartner.v3']
 MULTICAST_PORT = 9898
+MULTICAST_ADDRESS = '224.0.0.50'
+
+
+def create_mcast_socket(interface, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    if interface != 'any':
+        if platform.system() != "Windows":
+            try:
+                sock.bind((MULTICAST_ADDRESS, port))
+            except OSError:
+                sock.bind((interface, port))
+        else:
+            sock.bind((interface, port))
+
+        mreq = socket.inet_aton(MULTICAST_ADDRESS) + socket.inet_aton(interface)
+    else:
+        if platform.system() != "Windows":
+            try:
+                sock.bind((MULTICAST_ADDRESS, port))
+            except OSError:
+                sock.bind(('', port))
+        else:
+            sock.bind(('', port))
+        mreq = struct.pack("=4sl", socket.inet_aton(MULTICAST_ADDRESS), socket.INADDR_ANY)
+
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+    return sock
+
 
 class XiaomiGatewayDiscovery:
     """PyXiami."""
     # pylint: disable=too-many-instance-attributes
-    MULTICAST_ADDRESS = '224.0.0.50'
     GATEWAY_DISCOVERY_PORT = 4321
     SOCKET_BUFSIZE = 1024
 
@@ -40,7 +69,7 @@ class XiaomiGatewayDiscovery:
     def discover_gateways(self):
         """Discover gateways using multicast"""
 
-        _socket = self._create_mcast_socket()
+        _socket = create_mcast_socket(self._interface, 0)
         _socket.settimeout(5.0)
 
         for gateway in self._gateways_config:
@@ -71,7 +100,7 @@ class XiaomiGatewayDiscovery:
 
         try:
             _socket.sendto('{"cmd":"whois"}'.encode(),
-                           (self.MULTICAST_ADDRESS, self.GATEWAY_DISCOVERY_PORT))
+                           (MULTICAST_ADDRESS, self.GATEWAY_DISCOVERY_PORT))
 
             while True:
                 data, (ip_add, _) = _socket.recvfrom(1024)
@@ -115,38 +144,12 @@ class XiaomiGatewayDiscovery:
             _LOGGER.info("Gateway discovery finished in 5 seconds")
             _socket.close()
 
-    def _create_mcast_socket(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-        if self._interface != 'any':
-            if platform.system() != "Windows":
-                try:
-                    sock.bind((self.MULTICAST_ADDRESS, MULTICAST_PORT))
-                except OSError:
-                    sock.bind((self._interface, MULTICAST_PORT))
-            else:
-                sock.bind((self._interface, MULTICAST_PORT))
-
-            mreq = socket.inet_aton(self.MULTICAST_ADDRESS) + socket.inet_aton(self._interface)
-        else:
-            if platform.system() != "Windows":
-                try:
-                    sock.bind((self.MULTICAST_ADDRESS, MULTICAST_PORT))
-                except OSError:
-                    sock.bind(('', MULTICAST_PORT))
-            else:
-                sock.bind(('', MULTICAST_PORT))
-            mreq = struct.pack("=4sl", socket.inet_aton(self.MULTICAST_ADDRESS), socket.INADDR_ANY)
-
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-        return sock
-
     def listen(self):
         """Start listening."""
 
         _LOGGER.info('Creating Multicast Socket')
-        self._mcastsocket = self._create_mcast_socket()
+        self._mcastsocket = create_mcast_socket(self._interface, MULTICAST_PORT)
+        self._mcastsocket.settimeout(5.0) # ensure you can exit the _listen_to_msg loop
         self._listening = True
         thread = Thread(target=self._listen_to_msg, args=())
         self._threads.append(thread)
@@ -164,12 +167,16 @@ class XiaomiGatewayDiscovery:
 
         for thread in self._threads:
             thread.join()
+        _LOGGER.info('Multisocket stopped')
 
     def _listen_to_msg(self):
         while self._listening:
             if self._mcastsocket is None:
                 continue
-            data, (ip_add, _) = self._mcastsocket.recvfrom(self.SOCKET_BUFSIZE)
+            try:
+                data, (ip_add, _) = self._mcastsocket.recvfrom(self.SOCKET_BUFSIZE)
+            except socket.timeout:
+                continue
             try:
                 data = json.loads(data.decode("ascii"))
                 gateway = self.gateways.get(ip_add)
@@ -190,6 +197,7 @@ class XiaomiGatewayDiscovery:
             except Exception:
                 _LOGGER.error('Cannot process multicast message: %s', data)
                 continue
+        _LOGGER.info('Listener stopped')
 
 
 # pylint: disable=too-many-instance-attributes
@@ -308,7 +316,7 @@ class XiaomiGateway:
 
     def _send_cmd(self, cmd, rtn_cmd=None):
         try:
-            _socket = self._create_mcast_socket()
+            _socket = create_mcast_socket(self._interface, 0)
             _socket.settimeout(10.0)
             _LOGGER.debug("_send_cmd >> %s", cmd.encode())
             _socket.sendto(cmd.encode(), (self.ip_adress, self.port))
