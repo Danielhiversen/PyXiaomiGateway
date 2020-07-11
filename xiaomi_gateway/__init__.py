@@ -214,6 +214,8 @@ class XiaomiGateway:
         self.devices = defaultdict(list)
         self.callbacks = defaultdict(list)
         self.token = None
+        self.connection_error = False
+        self.mac_error = False
         self._discovery_retries = discovery_retries
         self._interface = interface
 
@@ -280,6 +282,7 @@ class XiaomiGateway:
                     break
             if not _validate_data(resp):
                 _LOGGER.error("Not a valid device. Check the mac adress and update the firmware.")
+                self.mac_error = True
                 continue
 
             model = resp["model"]
@@ -323,6 +326,7 @@ class XiaomiGateway:
             data, _ = _socket.recvfrom(1024)
         except socket.timeout:
             _LOGGER.error("Cannot connect to Gateway")
+            self.connection_error = True
             return None
         finally:
             _socket.close()
