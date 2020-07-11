@@ -308,9 +308,7 @@ class XiaomiGateway:
 
     def _send_cmd(self, cmd, rtn_cmd=None):
         try:
-            _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            if self._interface != 'any':
-                _socket.bind((self._interface, 0))
+            _socket = self._create_mcast_socket()
             _socket.settimeout(10.0)
             _LOGGER.debug("_send_cmd >> %s", cmd.encode())
             _socket.sendto(cmd.encode(), (self.ip_adress, self.port))
