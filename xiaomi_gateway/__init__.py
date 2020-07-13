@@ -19,6 +19,7 @@ MULTICAST_ADDRESS = '224.0.0.50'
 
 
 def create_mcast_socket(interface, port):
+    """Create and bind a socket for communication."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -149,7 +150,7 @@ class XiaomiGatewayDiscovery:
 
         _LOGGER.info('Creating Multicast Socket')
         self._mcastsocket = create_mcast_socket(self._interface, MULTICAST_PORT)
-        self._mcastsocket.settimeout(5.0) # ensure you can exit the _listen_to_msg loop
+        self._mcastsocket.settimeout(5.0)  # ensure you can exit the _listen_to_msg loop
         self._listening = True
         thread = Thread(target=self._listen_to_msg, args=())
         self._threads.append(thread)
