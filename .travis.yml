@@ -1,7 +1,7 @@
 sudo: required
 language: python
 python:
-  - "3.5"
+- '3.5'
 cache: pip
 install:
 - sudo modprobe dummy
@@ -19,7 +19,7 @@ deploy:
   provider: pypi
   user: dahoiv
   password:
-    secure: L58cQ+zOLr2yeWPR/4ImR/006yFy3l9PkVfoI0pMnRtgPVDJ4aG0j/vvDJqJR3TrJIjHhx+sfYwKzBA3zfNJLuVeaQfx0hgsmm3FuhCrOELEmFeinIohaVXqb7BTdU4HpxBnletSjyq5FfVKq+9hLTSiPkvD7HNVir7BdrCgSgmsKepv7Lgc8kYtiX8DPko/s1f7V/2HjtY0HHiCYFEzyYYIFgFq5wCWb/lGFGoO4Y7cQUCcvvV1AMrop92h+parDMhHGzPTdXA7GOvbjwF69rs0fAZ9+tWpTWzgCKMGA+VQp716DKwTlLcbfO1ULCtTz/Ww8mwUYjDeK+SG8vh3EswQuB5KA4TBqy5sxVN2UNPHAOyGqub2Er9lIqcVvIdV52RhOnt9LdZFMdRP3wrnqy0DZPLAsQ19f75fTkSU5YhYLS5rMaueIlj1+E9bos22VDwN3Q4FiaRbwh2t5hBRdzT43QY6VbTfFF+muiO3s0N7eHtxejMg7V3BSmzVhXPtHQdObDJW+zp+hJIXZFC2QdLvuFfK8HeZiOYJwCLf5Ln/NCAhWa4WKnEpAKaPUFhFyHYilbYBQn3Zzo0MR+En15VsIL0c7N0j3+vwWQ6yKLI9vBdb0CMpQPYNahrfDveaibJ9i97wOsX4ROJdmS56W9rxMbioLT4azQer7xLDtjo=
+    secure: BToqJKqsbxAPksYx9TCZur5RqgJi5/FIKm3OtQ5k7q95fEiqU3RGOCDbfkw4lk7bq3lzDRvp9Ml1JuwRb2VFm6DMSp66XaybqKAiKGJxuR1AtcmQpJ/jmHGGbAP2WsFNTx/sjpoymm2U6VZUZmD758LReiTCMMu2WmtpaSCgXfK3MOn5PBIYAM5AMKAaU8BYXj6VmOPYKdqDhWm1isPMJTVB+sFiuvWwNv9bpsBn/GpEeB2AFqHFmV+LmPwDKDbGIS+I/WPfhBF9YVncGNtp9IMQVKyaeMq6XUv8pfFPfs/oBYEK4u1Xg+NpRPKlWf8d8Hjx2W/lKyDiPpCaW8S+HRxB6Jl9ZWt0FwEa1k9BSIXdZgAPHdx1ExXI9UJk54iMxDxAfCJ8aXvMy4hIByO7HR8wtu1OJhR2BfBIsom0rRYBg2JhjHv0ufbkOxk6NpZoTIQa+3Syri8C0hbi/3HxkRjwwGIs/nDSHQ7+vHr6B2lUDy//u3+xB5QhKbZkgiZ8TmccyCqfq267jFYiPQxSBbPgAvguHLnAnldzahShB3bmTApp4S3hui9Fz/mty74o4fHTh4X8NRkAODLwe/dw1Oe/hYB9x/vjJRHbdcabzWrhh8Z3wHhJJOe3pVjsFggep8tWcxuOaDyeu0FZObCodMqGeaokW0PHuPmTgH+uASU=
   on:
     tags: true
     distributions: sdist bdist_wheel
