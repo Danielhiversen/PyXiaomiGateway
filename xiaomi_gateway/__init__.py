@@ -22,7 +22,7 @@ class XiaomiGatewayDiscovery:
     MULTICAST_ADDRESS = '224.0.0.50'
     MULTICAST_PORT = 9898
     GATEWAY_DISCOVERY_PORT = 4321
-    SOCKET_BUFSIZE = 10240
+    SOCKET_BUFSIZE = 4096
 
     def __init__(self, callback_func, gateways_config, interface,
                  device_discovery_retries=DEFAULT_DISCOVERY_RETRIES):
@@ -77,7 +77,7 @@ class XiaomiGatewayDiscovery:
                            (self.MULTICAST_ADDRESS, self.GATEWAY_DISCOVERY_PORT))
 
             while True:
-                data, (ip_add, _) = _socket.recvfrom(10240)
+                data, (ip_add, _) = _socket.recvfrom(self.SOCKET_BUFSIZE)
                 if len(data) is None or ip_add in self.gateways:
                     continue
 
@@ -311,7 +311,7 @@ class XiaomiGateway:
             _socket.settimeout(10.0)
             _LOGGER.debug("_send_cmd >> %s", cmd.encode())
             _socket.sendto(cmd.encode(), (self.ip_adress, self.port))
-            data, _ = _socket.recvfrom(10240)
+            data, _ = _socket.recvfrom(self.SOCKET_BUFSIZE)
         except socket.timeout:
             _LOGGER.error("Cannot connect to Gateway")
             return None
