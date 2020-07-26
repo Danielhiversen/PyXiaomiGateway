@@ -14,6 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_DISCOVERY_RETRIES = 4
 
 GATEWAY_MODELS = ['gateway', 'gateway.v3', 'acpartner.v3']
+SOCKET_BUFSIZE = 4096
 MULTICAST_PORT = 9898
 MULTICAST_ADDRESS = '224.0.0.50'
 
@@ -51,7 +52,6 @@ class XiaomiGatewayDiscovery:
     """PyXiami."""
     # pylint: disable=too-many-instance-attributes
     GATEWAY_DISCOVERY_PORT = 4321
-    SOCKET_BUFSIZE = 1024
 
     def __init__(self, callback_func, gateways_config, interface,
                  device_discovery_retries=DEFAULT_DISCOVERY_RETRIES):
@@ -104,7 +104,7 @@ class XiaomiGatewayDiscovery:
                            (MULTICAST_ADDRESS, self.GATEWAY_DISCOVERY_PORT))
 
             while True:
-                data, (ip_add, _) = _socket.recvfrom(1024)
+                data, (ip_add, _) = _socket.recvfrom(SOCKET_BUFSIZE)
                 if len(data) is None or ip_add in self.gateways:
                     continue
 
@@ -175,7 +175,7 @@ class XiaomiGatewayDiscovery:
             if self._mcastsocket is None:
                 continue
             try:
-                data, (ip_add, _) = self._mcastsocket.recvfrom(self.SOCKET_BUFSIZE)
+                data, (ip_add, _) = self._mcastsocket.recvfrom(SOCKET_BUFSIZE)
             except socket.timeout:
                 continue
             try:
@@ -324,7 +324,7 @@ class XiaomiGateway:
             _socket.settimeout(10.0)
             _LOGGER.debug("_send_cmd >> %s", cmd.encode())
             _socket.sendto(cmd.encode(), (self.ip_adress, self.port))
-            data, _ = _socket.recvfrom(1024)
+            data, _ = _socket.recvfrom(SOCKET_BUFSIZE)
         except socket.timeout:
             _LOGGER.error("Cannot connect to Gateway")
             self.connection_error = True
