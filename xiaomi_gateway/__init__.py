@@ -269,7 +269,7 @@ class XiaomiGateway:
             'switch': ['plug',
                        'ctrl_neutral1', 'ctrl_neutral1.aq1', 'switch_b1lacn02',
                        'ctrl_neutral2', 'ctrl_neutral2.aq1', 'switch_b2lacn02',
-                       'ctrl_ln1', 'ctrl_ln1.aq1',
+                       'ctrl_ln1', 'ctrl_ln1.aq1', 'switch_b1nacn02',
                        'ctrl_ln2', 'ctrl_ln2.aq1', 'switch_b2nacn02',
                        '86plug', 'ctrl_86plug', 'ctrl_86plug.aq1'],
             'light': ['gateway', 'gateway.v3'],
