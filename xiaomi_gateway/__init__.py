@@ -70,8 +70,10 @@ class XiaomiGatewayDiscovery:
     def discover_gateways(self):
         """Discover gateways using multicast"""
 
-        _socket = create_mcast_socket(self._interface, 0)
+        _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         _socket.settimeout(5.0)
+        if self._interface != 'any':
+            _socket.bind((self._interface, 0))
 
         for gateway in self._gateways_config:
             host = gateway.get('host')
@@ -320,7 +322,9 @@ class XiaomiGateway:
 
     def _send_cmd(self, cmd, rtn_cmd=None):
         try:
-            _socket = create_mcast_socket(self._interface, 0)
+            _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            if self._interface != 'any':
+                _socket.bind((self._interface, 0))
             _socket.settimeout(10.0)
             _LOGGER.debug("_send_cmd >> %s", cmd.encode())
             _socket.sendto(cmd.encode(), (self.ip_adress, self.port))
