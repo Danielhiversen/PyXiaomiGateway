@@ -6,7 +6,7 @@ setup(
     install_requires=['cryptography>=2.1.1'],
     version = '0.13.2',
     description = 'A library to communicate with the Xiaomi Gateway',
-    author='Daniel Hoyer Iversen',
+    author='Daniel Hoyer',
     url='https://github.com/Danielhiversen/PyXiaomiGateway/',
     classifiers=[
         'Development Status :: 3 - Alpha',
