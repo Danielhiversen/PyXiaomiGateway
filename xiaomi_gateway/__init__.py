@@ -330,13 +330,13 @@ class XiaomiGateway:
             _socket.sendto(cmd.encode(), (self.ip_adress, self.port))
             data, _ = _socket.recvfrom(SOCKET_BUFSIZE)
         except socket.timeout:
-            _LOGGER.error("Cannot connect to Gateway")
+            _LOGGER.error("Cannot connect to gateway %s", self.sid)
             self.connection_error = True
             return None
         finally:
             _socket.close()
         if data is None:
-            _LOGGER.error("No response from Gateway")
+            _LOGGER.error("No response from gateway %s", self.sid)
             return None
         resp = json.loads(data.decode())
         _LOGGER.debug("_send_cmd resp << %s", resp)
