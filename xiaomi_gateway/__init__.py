@@ -1,4 +1,5 @@
 """Library to handle connection with Xiaomi Gateway"""
+import os
 import socket
 import json
 import logging
@@ -17,6 +18,7 @@ GATEWAY_MODELS = ['gateway', 'gateway.v3', 'acpartner.v3']
 SOCKET_BUFSIZE = 4096
 MULTICAST_PORT = 9898
 MULTICAST_ADDRESS = '224.0.0.50'
+UNKNOWN_MODELS = {}
 
 
 def create_mcast_socket(interface, port):
@@ -291,6 +293,9 @@ class XiaomiGateway:
             model = resp["model"]
             supported = False
 
+            if model == '':
+                model = _load_model(sid)
+
             for device_type in device_types:
                 if model in device_types[device_type]:
                     supported = True
@@ -411,6 +416,9 @@ class XiaomiGateway:
         sid = data['sid']
         for func in self.callbacks[sid]:
             func(jdata, data)
+        else:
+            if UNKNOWN_MODELS.get(sid) == '':
+                _save_model(sid, jdata)
         return True
 
     def _get_key(self):
@@ -472,3 +480,27 @@ def _list2map(data):
             new_data[key] = obj[key]
     new_data['raw_data'] = data
     return new_data
+
+
+def _load_model(sid: str):
+    if 'init' not in UNKNOWN_MODELS:
+        filename = os.path.realpath(__file__)[:-11] + 'models.json'
+        if os.path.isfile(filename):
+            with open(filename, 'rt') as f:
+                raw = json.load(f)
+            UNKNOWN_MODELS.update(raw)
+        UNKNOWN_MODELS['init'] = True
+
+    return UNKNOWN_MODELS.setdefault(sid, '')
+
+
+def _save_model(sid: str, data: dict):
+    if 'channel_0' in data or 'channel_1' in data:
+        model = 'ctrl_neutral2'
+    else:
+        return
+
+    UNKNOWN_MODELS[sid] = model
+    filename = os.path.realpath(__file__)[:-11] + 'models.json'
+    with open(filename, 'wt') as f:
+        json.dump(UNKNOWN_MODELS, f)
