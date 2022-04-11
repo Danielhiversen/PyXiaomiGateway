@@ -97,7 +97,7 @@ class AsyncXiaomiGatewayMulticast:
         """Return if the interface is bound."""
         return self._bind_interface
 
-    def Register_gateway(self, ip, callback):
+    def register_gateway(self, ip, callback):
         """Register a Gateway to this Multicast listener."""
         if ip in self._registered_callbacks:
             _LOGGER.error(
@@ -106,12 +106,12 @@ class AsyncXiaomiGatewayMulticast:
             )
         self._registered_callbacks[ip] = callback
 
-    def Unregister_gateway(self, ip):
+    def unregister_gateway(self, ip):
         """Unregister a Gateway from this Multicast listener."""
         if ip in self._registered_callbacks:
             self._registered_callbacks.pop(ip)
 
-    async def Start_listen(self):
+    async def start_listen(self):
         """Start listening."""
         if self._listen_couroutine is not None:
             _LOGGER.error(
@@ -122,7 +122,7 @@ class AsyncXiaomiGatewayMulticast:
         listen_task = self._create_udp_listener()
         _, self._listen_couroutine = await listen_task
 
-    def Stop_listen(self):
+    def stop_listen(self):
         """Stop listening."""
         if self._listen_couroutine is None:
             return
