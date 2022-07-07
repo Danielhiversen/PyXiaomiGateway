@@ -1,4 +1,5 @@
 """Library to handle connection with Xiaomi Gateway"""
+import asyncio
 import socket
 import json
 import logging
@@ -19,33 +20,176 @@ MULTICAST_PORT = 9898
 MULTICAST_ADDRESS = '224.0.0.50'
 
 
-def create_mcast_socket(interface, port):
+def create_mcast_socket(interface, port, bind_interface=True, blocking=True):
     """Create and bind a socket for communication."""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    if interface != 'any':
-        if platform.system() != "Windows":
-            try:
-                sock.bind((MULTICAST_ADDRESS, port))
-            except OSError:
-                sock.bind((interface, port))
-        else:
-            sock.bind((interface, port))
-
-        mreq = socket.inet_aton(MULTICAST_ADDRESS) + socket.inet_aton(interface)
+    # Host IP adress is recommended as interface.
+    if interface == "any":
+        ip32bit = socket.INADDR_ANY
+        bind_interface = False
+        mreq = struct.pack("=4sl", socket.inet_aton(MULTICAST_ADDRESS), ip32bit)
     else:
-        if platform.system() != "Windows":
-            try:
-                sock.bind((MULTICAST_ADDRESS, port))
-            except OSError:
-                sock.bind(('', port))
-        else:
-            sock.bind(('', port))
-        mreq = struct.pack("=4sl", socket.inet_aton(MULTICAST_ADDRESS), socket.INADDR_ANY)
+        ip32bit = socket.inet_aton(interface)
+        mreq = socket.inet_aton(MULTICAST_ADDRESS) + ip32bit
 
-    sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-    return sock
+    udp_socket = socket.socket(
+        socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
+    )
+    udp_socket.setblocking(blocking)
+
+    # Required for receiving multicast
+    udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    try:
+        udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, ip32bit)
+    except:
+        _LOGGER.error(
+            "Error creating multicast socket using IPPROTO_IP, trying SOL_IP"
+        )
+        udp_socket.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, ip32bit)
+
+    try:
+        udp_socket.setsockopt(
+            socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq,
+        )
+    except:
+        _LOGGER.error(
+            "Error adding multicast socket membership using IPPROTO_IP, trying SOL_IP"
+        )
+        udp_socket.setsockopt(
+            socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, mreq,
+        )
+
+    udp_socket.bind((interface if bind_interface else "", port))
+
+    return udp_socket
+
+
+class AsyncXiaomiGatewayMulticast:
+    """Async Multicast UDP communication class for a XiaomiGateway."""
+
+    def __init__(self, interface="any", bind_interface=True):
+        self._listen_couroutine = None
+        self._interface = interface
+        self._bind_interface = bind_interface
+
+        self._registered_callbacks = {}
+
+    def _create_udp_listener(self):
+        """Create the UDP multicast socket and protocol."""
+        udp_socket = create_mcast_socket(
+            self._interface, MULTICAST_PORT, bind_interface=self._bind_interface, blocking=False
+        )
+
+        loop = asyncio.get_event_loop()
+
+        return loop.create_datagram_endpoint(
+            lambda: self.MulticastListenerProtocol(loop, udp_socket, self),
+            sock=udp_socket,
+        )
+
+    @property
+    def interface(self):
+        """Return the used interface."""
+        return self._interface
+
+    @property
+    def bind_interface(self):
+        """Return if the interface is bound."""
+        return self._bind_interface
+
+    def register_gateway(self, ip, callback):
+        """Register a Gateway to this Multicast listener."""
+        if ip in self._registered_callbacks:
+            _LOGGER.error(
+                "A callback for ip '%s' was already registed, overwriting previous callback",
+                ip,
+            )
+        self._registered_callbacks[ip] = callback
+
+    def unregister_gateway(self, ip):
+        """Unregister a Gateway from this Multicast listener."""
+        if ip in self._registered_callbacks:
+            self._registered_callbacks.pop(ip)
+
+    async def start_listen(self):
+        """Start listening."""
+        if self._listen_couroutine is not None:
+            _LOGGER.error(
+                "Multicast listener already started, not starting another one."
+            )
+            return
+
+        listen_task = self._create_udp_listener()
+        _, self._listen_couroutine = await listen_task
+
+    def stop_listen(self):
+        """Stop listening."""
+        if self._listen_couroutine is None:
+            return
+
+        self._listen_couroutine.close()
+        self._listen_couroutine = None
+
+    class MulticastListenerProtocol:
+        """Handle received multicast messages."""
+
+        def __init__(self, loop, udp_socket, parent):
+            """Initialize the class."""
+            self.transport = None
+            self._loop = loop
+            self._sock = udp_socket
+            self._parent = parent
+            self._connected = False
+
+        def connection_made(self, transport):
+            """Set the transport."""
+            self.transport = transport
+            self._connected = True
+            _LOGGER.info("XiaomiMulticast listener started")
+
+        def connection_lost(self, exc):
+            """Handle connection lost."""
+            if self._connected:
+                _LOGGER.error(
+                    "Connection unexpectedly lost in XiaomiMulticast listener: %s", exc
+                )
+
+        def datagram_received(self, data, addr):
+            """Handle received messages."""
+            try:
+                (ip_add, _) = addr
+                message = json.loads(data.decode("ascii"))
+
+                if ip_add not in self._parent._registered_callbacks:
+                    _LOGGER.info("Unknown Xiaomi gateway ip %s", ip_add)
+                    return
+
+                callback = self._parent._registered_callbacks[ip_add]
+                callback(message)
+
+            except Exception:
+                _LOGGER.exception("Cannot process multicast message: '%s'", data)
+
+        def error_received(self, exc):
+            """Log UDP errors."""
+            _LOGGER.error("UDP error received in XiaomiMulticast listener: %s", exc)
+
+        def close(self):
+            """Stop the server."""
+            _LOGGER.debug("XiaomiMulticast listener shutting down")
+            self._connected = False
+            if self.transport:
+                self.transport.close()
+            try:
+                self._loop.remove_writer(self._sock.fileno())
+            except NotImplementedError:
+                pass
+            try:
+                self._loop.remove_reader(self._sock.fileno())
+            except NotImplementedError:
+                pass
+            self._sock.close()
+            _LOGGER.info("XiaomiMulticast listener stopped")
 
 
 class XiaomiGatewayDiscovery:
@@ -53,16 +197,9 @@ class XiaomiGatewayDiscovery:
     # pylint: disable=too-many-instance-attributes
     GATEWAY_DISCOVERY_PORT = 4321
 
-    def __init__(self, callback_func, gateways_config, interface,
-                 device_discovery_retries=DEFAULT_DISCOVERY_RETRIES):
+    def __init__(self, interface, device_discovery_retries=DEFAULT_DISCOVERY_RETRIES):
 
-        self.disabled_gateways = []
         self.gateways = defaultdict(list)
-        self.callback_func = callback_func
-        self._listening = False
-        self._mcastsocket = None
-        self._threads = []
-        self._gateways_config = gateways_config
         self._interface = interface
         self._device_discovery_retries = device_discovery_retries
 
@@ -75,42 +212,16 @@ class XiaomiGatewayDiscovery:
         if self._interface != 'any':
             _socket.bind((self._interface, 0))
 
-        for gateway in self._gateways_config:
-            host = gateway.get('host')
-            port = gateway.get('port')
-            sid = gateway.get('sid')
-
-            if not (host and port and sid):
-                continue
-            try:
-                ip_address = socket.gethostbyname(host)
-                if gateway.get('disable'):
-                    _LOGGER.info(
-                        'Xiaomi Gateway %s is disabled by configuration', sid)
-                    self.disabled_gateways.append(ip_address)
-                    continue
-                _LOGGER.info(
-                    'Xiaomi Gateway %s configured at IP %s:%s',
-                    sid, ip_address, port)
-
-                self.gateways[ip_address] = XiaomiGateway(
-                    ip_address, sid, gateway.get('key'),
-                    self._device_discovery_retries,
-                    self._interface, port, gateway.get('proto'))
-            except OSError as error:
-                _LOGGER.error(
-                    "Could not resolve %s: %s", host, error)
-
         try:
             _socket.sendto('{"cmd":"whois"}'.encode(),
                            (MULTICAST_ADDRESS, self.GATEWAY_DISCOVERY_PORT))
 
             while True:
                 data, (ip_add, _) = _socket.recvfrom(SOCKET_BUFSIZE)
-                if len(data) is None or ip_add in self.gateways:
+                if len(data) is None:
                     continue
 
-                if ip_add in self.gateways.keys() or ip_add in self.disabled_gateways:
+                if ip_add in self.gateways.keys():
                     continue
 
                 resp = json.loads(data.decode())
@@ -122,85 +233,17 @@ class XiaomiGatewayDiscovery:
                     _LOGGER.error("Response must be gateway model")
                     continue
 
-                disabled = False
                 gateway_key = None
-                for gateway in self._gateways_config:
-                    sid = gateway.get('sid')
-                    if sid is None or sid == resp["sid"]:
-                        gateway_key = gateway.get('key')
-                    if sid and sid == resp['sid'] and gateway.get('disable'):
-                        disabled = True
-
                 sid = resp["sid"]
-                if disabled:
-                    _LOGGER.info("Xiaomi Gateway %s is disabled by configuration",
-                                 sid)
-                    self.disabled_gateways.append(ip_add)
-                else:
-                    _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
-                    self.gateways[ip_add] = XiaomiGateway(
-                        ip_add, sid, gateway_key,
-                        self._device_discovery_retries, self._interface, resp["port"],
-                        resp["proto_version"] if "proto_version" in resp else None)
+                _LOGGER.info('Xiaomi Gateway %s found at IP %s', sid, ip_add)
+                self.gateways[ip_add] = XiaomiGateway(
+                    ip_add, sid, gateway_key,
+                    self._device_discovery_retries, self._interface, resp["port"],
+                    resp["proto_version"] if "proto_version" in resp else None)
 
         except socket.timeout:
             _LOGGER.info("Gateway discovery finished in 5 seconds")
             _socket.close()
-
-    def listen(self):
-        """Start listening."""
-
-        _LOGGER.info('Creating Multicast Socket')
-        self._mcastsocket = create_mcast_socket(self._interface, MULTICAST_PORT)
-        self._mcastsocket.settimeout(5.0)  # ensure you can exit the _listen_to_msg loop
-        self._listening = True
-        thread = Thread(target=self._listen_to_msg, args=())
-        self._threads.append(thread)
-        thread.daemon = True
-        thread.start()
-
-    def stop_listen(self):
-        """Stop listening."""
-        self._listening = False
-
-        if self._mcastsocket is not None:
-            _LOGGER.info('Closing multisocket')
-            self._mcastsocket.close()
-            self._mcastsocket = None
-
-        for thread in self._threads:
-            thread.join()
-        _LOGGER.info('Multisocket stopped')
-
-    def _listen_to_msg(self):
-        while self._listening:
-            if self._mcastsocket is None:
-                continue
-            try:
-                data, (ip_add, _) = self._mcastsocket.recvfrom(SOCKET_BUFSIZE)
-            except socket.timeout:
-                continue
-            try:
-                data = json.loads(data.decode("ascii"))
-                gateway = self.gateways.get(ip_add)
-                if gateway is None:
-                    if ip_add not in self.disabled_gateways:
-                        _LOGGER.error('Unknown gateway ip %s', ip_add)
-                    continue
-
-                cmd = data['cmd']
-                if cmd == 'heartbeat' and data['model'] in GATEWAY_MODELS:
-                    gateway.token = data['token']
-                elif cmd in ('report', 'heartbeat'):
-                    _LOGGER.debug('MCAST (%s) << %s', cmd, data)
-                    self.callback_func(gateway.push_data, data)
-                else:
-                    _LOGGER.error('Unknown multicast data: %s', data)
-            # pylint: disable=broad-except
-            except Exception:
-                _LOGGER.error('Cannot process multicast message: %s', data)
-                continue
-        _LOGGER.info('Listener stopped')
 
 
 # pylint: disable=too-many-instance-attributes
@@ -400,6 +443,17 @@ class XiaomiGateway:
         resp = self._send_cmd(cmd, "read_ack") if int(self.proto[0:1]) == 1 else self._send_cmd(cmd, "read_rsp")
         _LOGGER.debug("read_ack << %s", resp)
         return self.push_data(resp)
+
+    def multicast_callback(self, message):
+        """Push data broadcasted from gateway"""          
+        cmd = message['cmd']
+        if cmd == 'heartbeat' and message['model'] in GATEWAY_MODELS:
+            self.token = message['token']
+        elif cmd in ('report', 'heartbeat'):
+            _LOGGER.debug('MCAST (%s) << %s', cmd, message)
+            self.push_data(message)
+        else:
+            _LOGGER.error('Unknown multicast message: %s', message)
 
     def push_data(self, data):
         """Push data broadcasted from gateway to device"""
