@@ -68,7 +68,7 @@ class AsyncXiaomiGatewayMulticast:
     """Async Multicast UDP communication class for a XiaomiGateway."""
 
     def __init__(self, interface="any", bind_interface=True):
-        self._listen_couroutine = None
+        self._protocol = None
         self._interface = interface
         self._bind_interface = bind_interface
 
@@ -113,22 +113,21 @@ class AsyncXiaomiGatewayMulticast:
 
     async def start_listen(self):
         """Start listening."""
-        if self._listen_couroutine is not None:
+        if self._protocol is not None:
             _LOGGER.error(
                 "Multicast listener already started, not starting another one."
             )
             return
 
-        listen_task = self._create_udp_listener()
-        _, self._listen_couroutine = await listen_task
+        _, self._protocol = await self._create_udp_listener()
 
     def stop_listen(self):
         """Stop listening."""
-        if self._listen_couroutine is None:
+        if self._protocol is None:
             return
 
-        self._listen_couroutine.close()
-        self._listen_couroutine = None
+        self._protocol.close()
+        self._protocol = None
 
     class MulticastListenerProtocol:
         """Handle received multicast messages."""
