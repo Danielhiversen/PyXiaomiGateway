@@ -59,7 +59,7 @@ def create_mcast_socket(interface, port, bind_interface=True, blocking=True):
             socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, mreq,
         )
 
-    udp_socket.bind((interface if bind_interface else "", port))
+    udp_socket.bind((MULTICAST_ADDRESS if bind_interface else "", port))
 
     return udp_socket
 
